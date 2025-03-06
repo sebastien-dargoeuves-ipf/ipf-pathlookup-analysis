@@ -4,6 +4,7 @@ Script to display one path in IP Fabric for a given source, destination.
 The output will highlight the security matching
 Option to use a pivot IP is possible.
 """
+
 import ipaddress
 import json
 import os
@@ -15,18 +16,24 @@ from dotenv import find_dotenv, load_dotenv
 from rich import print
 from rich.table import Table
 
-from modules.pathLookup import (display_all_edges, display_path,
-                                display_summary_global, display_summary_topics,
-                                follow_path_first_option, get_json_pathlookup,
-                                get_zonefw_interfaces)
+from modules.pathLookup import (
+    create_ipf_client,
+    display_all_edges,
+    display_path,
+    display_summary_global,
+    display_summary_topics,
+    follow_path_first_option,
+    get_json_pathlookup,
+    get_zonefw_interfaces,
+)
 
-
-IPF_ENV_PREFIX = "_DEMO"  # _TS / _DEMO / default to env. variables
-# TS:"73eb6288-0330-4778-a053-1e332b408235" / DEMO: "12dd8c61-129c-431a-b98b-4c9211571f89"
+# IPF_ENV_PREFIX = "_DEMO"  # _DEMO / default to env. variables
+# DEMO S02 - Day2: "12dd8c61-129c-431a-b98b-4c9211571f89"
 # Azure day1: "d323b197-35bb-41e5-9a42-d4de9b38ccaa"
-IPF_SNAPSHOT_OVERWRITE = "d323b197-35bb-41e5-9a42-d4de9b38ccaa"
+# IPF_SNAPSHOT_OVERWRITE = "d323b197-35bb-41e5-9a42-d4de9b38ccaa"
 IPF_VERIFY_OVERWRITE = False
-IPF_TIMEOUT_OVERWRITE = 15
+IPF_TIMEOUT_OVERWRITE = 20
+
 
 class ProtocolChoices(str, Enum):
     """
@@ -37,12 +44,13 @@ class ProtocolChoices(str, Enum):
     - udp: UDP protocol
     - icmp: ICMP protocol
     """
+
     tcp = "tcp"
     udp = "udp"
     icmp = "icmp"
 
 
-app = typer.Typer(add_completion=False)
+app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
 
 
 def validate_option_tcp_udp_callback(
@@ -164,6 +172,12 @@ def main(
         help="Enter Source Ports (udp, tcp)",
         callback=validate_option_tcp_udp_callback,
     ),
+    source_vrf: str = typer.Option(
+        None,
+        "--source_vrf",
+        "-vrf",
+        help="Enter the Source VRF if you don't want to use the Auto-Select option",
+    ),
     ttl: int = typer.Option(
         128,
         "--ttl",
@@ -182,7 +196,7 @@ def main(
         False,
         "--secure_path",
         "-sec",
-        help="Secure the path: stop the flow when hiting security rules",
+        help="Secure the path: stop the flow when hitting security rules",
     ),
     l2_exclusion: bool = typer.Option(
         False,
@@ -219,6 +233,7 @@ def main(
     src_port (str): The source port number (only used with TCP/UDP protocols).
     ttl (int): The time-to-live (TTL) value.
     fragment_offset (int): The fragment offset value.
+    source_vrf (str): The source VRF (optional).
     secured_path (bool): Whether to use a secured path or not.
     l2_exclusion (bool): Remove L2 and FabricPath information.
     pivot (str): to use to perform two PathLookup, first to identify where the source is connected
@@ -230,18 +245,21 @@ def main(
     """
     # Load environment variables
     load_dotenv(find_dotenv(), override=True)
+    # Create the overwrite as empty if not defined
+    IPF_ENV_PREFIX = locals().get("IPF_ENV_PREFIX", "")
+    IPF_SNAPSHOT_OVERWRITE = locals().get("IPF_SNAPSHOT_OVERWRITE", "")
+    IPF_VERIFY_OVERWRITE = locals().get("IPF_VERIFY_OVERWRITE", "")
     # if we use ICMP, we don't need tcp/udp ports
     if protocol == "icmp":
         src_port = 0
         dst_port = 0
-    secured_path_msg = (
-        "Security: Stop" if secured_path else "Security: Continue"
-    )
+    secured_path_msg = "Security: Stop" if secured_path else "Security: Continue"
     summary_path_msg = f"[bold]Pathlookup Analysis[/bold]\n[red]{src_ip}[/red]"
     summary_path_msg += f":[blue]{src_port}[/blue]" if src_port != 0 else ""
     summary_path_msg += f" --> [red]{dst_ip}[/red]"
     summary_path_msg += f":[blue]{dst_port}[/blue]" if dst_port != 0 else ""
     summary_path_msg += f" | {protocol} | {secured_path_msg}"
+    summary_path_msg += f" | Source VRF: {source_vrf}" if source_vrf else ""
     print(summary_path_msg)
     if verbose:
         print(f"[italic]Debug: ttl:{ttl}, fragment offset:{fragment_offset}\n")
@@ -256,26 +274,28 @@ def main(
         auth = os.getenv("".join(["IPF_TOKEN", IPF_ENV_PREFIX]))
         snapshot_id = os.getenv("IPF_SNAPSHOT_ID", IPF_SNAPSHOT_OVERWRITE)
         ipf_verify = os.getenv("IPF_VERIFY", IPF_VERIFY_OVERWRITE)
-        ipf_timeout = os.getenv("IPF_VERIFY", IPF_TIMEOUT_OVERWRITE)
-        pathlookup_json = get_json_pathlookup(
+        ipf_timeout = os.getenv("IPF_TIMEOUT", IPF_TIMEOUT_OVERWRITE)
+        ipf_client = create_ipf_client(
             base_url=base_url,
             auth=auth,
             snapshot_id=snapshot_id,
+            verify=ipf_verify,
+            timeout=ipf_timeout,
+        )
+        pathlookup_json = get_json_pathlookup(
+            ipf_client=ipf_client,
             src_ip=src_ip,
             dst_ip=dst_ip,
             protocol=protocol,
             src_port=src_port,
             dst_port=dst_port,
             ttl=ttl,
+            source_vrf=source_vrf,
             fragment_offset=fragment_offset,
             secured_path=secured_path,
             pivot=pivot,
-            ipf_verify=ipf_verify,
-            ipf_timeout=ipf_timeout,
         )
-        zonefw_interfaces = get_zonefw_interfaces(
-            base_url, auth, snapshot_id, ipf_verify, ipf_timeout
-        )
+        zonefw_interfaces = get_zonefw_interfaces(ipf_client)
     else:
         # Using json file to generate the output
         pathlookup_json = json.load(file)
@@ -284,7 +304,6 @@ def main(
     pathlookup_edges = pathlookup_json["graphResult"]["graphData"]["edges"]
     pathlookup_result = pathlookup_json["pathlookup"]
     pathlookup_decisions = pathlookup_json["pathlookup"]["decisions"]
-
     # Summary
     print("\n[bold] 1. Event Summary[/bold]")
     # Go through the topics and extract the information
@@ -295,12 +314,12 @@ def main(
         print("\n EXIT -> no Path available")
         sys.exit(0)
 
-    # print("\n[bold] x. Path Edges[/bold] (explore all nextEdgeId)")
-    # path_all_edges = display_all_edges(pathlookup_edges)
+    print("\n[bold] x. Path Edges[/bold] (explore all nextEdgeId)")
+    path_all_edges = display_all_edges(pathlookup_edges)
 
     # print("\n[bold] 2.1 Generate one Path[/bold] (follow one path Only)")
     path_first_option = follow_path_first_option(pathlookup_edges)
-    
+
     print("\n[bold] 2. Display Decisions (one path)[/bold]")
     output_table = Table(title=summary_path_msg) if table_display else None
     if path_first_option:
