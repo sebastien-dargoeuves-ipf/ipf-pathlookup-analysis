@@ -22,6 +22,7 @@ Constants:
 -  L2_EXCLUSION_PROTOCOL: A tuple of L2 exclusion protocols.
 -  CHAIN_SWITCHING: The value representing chain switching.
 """
+
 from .utilis import remove_vdevice_id
 
 
@@ -68,7 +69,7 @@ def return_entry_point_pivot(pathlookup_json: dict) -> dict:
         if "--transit" in edge:
             interface_name = edge_data["sourceIfaceName"]
             device_id = edge_data["source"]
-            device_name = remove_vdevice_id(str(edge).split('@', maxsplit=1)[0])
+            device_name = remove_vdevice_id(str(edge).split("@", maxsplit=1)[0])
             device_sn = find_device_sn(device_id, pathlookup_nodes)
             return {"sn": device_sn, "iface": interface_name, "hostname": device_name}
     return None

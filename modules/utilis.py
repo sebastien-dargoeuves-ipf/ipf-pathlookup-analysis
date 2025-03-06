@@ -10,6 +10,8 @@ Functions:
 -  replace_vdevice_id(): Replace the nextEdgeId with the hostname if missing.
 
 """
+
+
 def display_severity(value: int):
     """
     Display the corresponding icon based on the severity value.

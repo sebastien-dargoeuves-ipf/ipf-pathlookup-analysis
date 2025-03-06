@@ -2,10 +2,11 @@
 # pathLookup.py
 Function to extract the information from the IPF's PathLookup output.
 """
+
 import re
 
 from ipfabric import IPFClient
-from ipfabric.diagrams import Algorithm, IPFDiagram, Unicast
+from ipfabric.diagrams import Algorithm, Unicast
 from rich import print
 from rich.table import Table
 
@@ -23,30 +24,30 @@ L2_EXCLUSION_PROTOCOL = ("l2", "fp")
 CHAIN_SWITCHING = "switching-nexthop"
 
 
-def get_zonefw_interfaces(
-    base_url: str,
-    auth: str,
-    snapshot_id: str,
-    ipf_verify: bool = False,
-    timeout: int = 10,
+def create_ipf_client(
+    base_url: str, auth: str, snapshot_id: str, verify: str, timeout: int
 ):
     """
-    Get from IP Fabric the tables containing the ZoneFW per Interfaces
+    Creates an IPF client with the given base URL, authentication, IPF verification, and snapshot ID.
     """
-    ipf = IPFClient(
+    return IPFClient(
         base_url=base_url,
         auth=auth,
         snapshot_id=snapshot_id,
-        verify=ipf_verify,
+        verify=verify,
         timeout=timeout,
     )
-    return ipf.technology.security.zone_firewall_interfaces.all()
+
+
+def get_zonefw_interfaces(ipf_client: IPFClient):
+    """
+    Get from IP Fabric the tables containing the ZoneFW per Interfaces
+    """
+    return ipf_client.technology.security.zone_firewall_interfaces.all()
 
 
 def get_json_pathlookup(
-    base_url: str,
-    auth: str,
-    snapshot_id: str,
+    ipf_client: IPFClient,
     src_ip: str,
     dst_ip: str,
     protocol: str,
@@ -56,10 +57,8 @@ def get_json_pathlookup(
     fragment_offset: str,
     secured_path: bool,
     pivot: str = None,
-    ipf_verify: bool = False,
-    ipf_timeout: int = 10,
-    ipf_diagram: IPFDiagram = None,
-    ipf_close: bool = True,
+    source_vrf: str = None,
+    ipf_diagram: object = None,
 ):
     """
     Call IP Fabric with the given parameters and return the resulting JSON output.
@@ -77,21 +76,17 @@ def get_json_pathlookup(
     Returns:
     str: The JSON file returned by IP Fabric.
     """
-    # Initialize an IPFDiagram object with the given parameters
-    firstHopAlgorithm = {"type": "automatic"}
+    # Initialize an diagram JSON object with the given parameters
+    firstHopAlgorithm = (
+        {"type": "automatic", "vrf": source_vrf}
+        if source_vrf
+        else {"type": "automatic"}
+    )
     if not ipf_diagram:
-        ipf_diagram = IPFDiagram(
-            base_url=base_url,
-            auth=auth,
-            snapshot_id=snapshot_id,
-            verify=ipf_verify,
-            timeout=ipf_timeout,
-        )
+        ipf_diagram = ipf_client.diagram
     if pivot:
         pivot_pathlookup_result = get_json_pathlookup(
-            base_url=base_url,
-            auth=auth,
-            snapshot_id=snapshot_id,
+            ipf_client=ipf_client,
             ipf_diagram=ipf_diagram,
             src_ip=pivot,
             dst_ip=src_ip,
@@ -123,14 +118,7 @@ def get_json_pathlookup(
     )
 
     # Call IP Fabric and retrieve the path lookup JSON file
-    pathlookup_json = ipf_diagram.diagram_json(uni)
-
-    # Close the IPFDiagram object
-    if ipf_close:
-        ipf_diagram.close()
-
-    # Return the JSON file
-    return pathlookup_json
+    return ipf_diagram.json(uni)
 
 
 def display_summary_topics(pathlookup_result: dict):
@@ -223,11 +211,13 @@ def display_all_edges(pathlookup_edges: dict):
     for edge in next_edge_ids:
         processed_edge = edge.split("--")
         processed_edge = [
-            f"{e.split('!')[1]}"
-            if "!" in e
-            else f"{e.split('@')[1]}"
-            if "@" in e
-            else e
+            (
+                f"{e.split('!')[1]}"
+                if "!" in e
+                else f"{e.split('@')[1]}"
+                if "@" in e
+                else e
+            )
             for e in processed_edge
         ]
         processed_edges.append("--".join(processed_edge))
@@ -240,7 +230,11 @@ def display_all_edges(pathlookup_edges: dict):
             final_all_edges.append(edge)
             device_src = edge.split("@")[0] if edge.split("@") else ""
             if device_src == prev_device_src:
-                print("".join([" └ ", edge])) if "multiple-egress" in edge else print(edge)
+                (
+                    print("".join([" └ ", edge]))
+                    if "multiple-egress" in edge
+                    else print(edge)
+                )
             else:
                 print(edge)
             prev_device_src = device_src
@@ -259,6 +253,9 @@ def follow_path_first_option(pathlookup_edges: dict):
     List of edges involved in the Path (always selecting the first option if multiple choices)
     """
 
+    # Guard clause to check if pathlookup_edges is empty
+    if not pathlookup_edges:
+        return []
     # Start from the first entry in the pathlookup_edges dictionary
     if pathlookup_edges.values():
         first_edge = next(iter(pathlookup_edges.values()))
@@ -278,7 +275,9 @@ def follow_path_first_option(pathlookup_edges: dict):
                 # in this situation we can encounter this nextEdgeIds
                 # vDevice/913624679@ge-0/0/4.200--dropped--#0
                 # we need to add the hostname
-                new_nextedge_id = replace_vdevice_id(pathlookup_edges[prev_next_edge_id])
+                new_nextedge_id = replace_vdevice_id(
+                    pathlookup_edges[prev_next_edge_id]
+                )
                 first_path_edges.append(new_nextedge_id)
             prev_next_edge_id = next_edge_id
             next_edge_id = (
@@ -437,6 +436,7 @@ def get_edge_details(
         # If no security events are found, return the device name
         return device_info
     return ""
+
 
 def display_path(
     path: list,
