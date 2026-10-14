@@ -1,0 +1,2074 @@
+{
+ "graphResult": {
+  "boxLabels": {
+   "AWS:890561831523/eu-central-1": "AWS:890561831523/eu-central-1",
+   "Paris-1X": "Paris-1X",
+   "vpc-043a024d72cd03c1d": "NAE"
+  },
+  "graphData": {
+   "edges": {
+    "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569": {
+     "direction": "directed",
+     "edgeSettingsId": "a8092d28-cee8-42f8-8179-79182996b924",
+     "id": "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569",
+     "labels": {
+      "source": [
+       {
+        "text": "Et2",
+        "type": "intName",
+        "visible": true
+       }
+      ],
+      "target": [
+       {
+        "text": "GigabitEthernet0/2",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [
+      "6582!vpn1xfw01@GigabitEthernet0/0--transit--#571",
+      "6582@GigabitEthernet0/2--dropped--#0"
+     ],
+     "packet": [
+      {
+       "dst": "5254.0033.3a0f",
+       "etherType": "ip",
+       "src": "caf0.0008.0002",
+       "type": "ethernet"
+      },
+      {
+       "dst": [
+        "10.2.0.222"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "172.16.12.0 .. 172.16.12.255"
+       ],
+       "ttl": 127,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "1024 .. 65535"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 418,
+         "y": 40
+        },
+        {
+         "x": 402,
+         "y": 34.5
+        },
+        {
+         "x": 402,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 340,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 260,
+        "y": 40
+       },
+       {
+        "x": 402,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [
+      "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#566"
+     ],
+     "severityInfo": {
+      "0": 1,
+      "10": 0,
+      "20": 0,
+      "30": 1
+     },
+     "shift": 0,
+     "source": "6571",
+     "sourceIfaceName": "Et2",
+     "style": {
+      "line": {
+       "color": 16751103,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "6582",
+     "targetIfaceName": "GigabitEthernet0/2",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 1065403809792,
+      "forwarded": 0,
+      "total": 1065403809792
+     }
+    },
+    "6582!vpn1xfw01@GigabitEthernet0/0--transit--#571": {
+     "direction": "directed",
+     "edgeSettingsId": "c24cb567-e4dc-4bcd-8f97-9c614c4bb6cd",
+     "id": "6582!vpn1xfw01@GigabitEthernet0/0--transit--#571",
+     "labels": {
+      "source": [
+       {
+        "text": "GigabitEthernet0/0",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [
+      "transit--6619!IPF-LAB@vpn-0edbe102d66f932dc/outside/3.74.102.138--#572"
+     ],
+     "packet": [
+      {
+       "dst": null,
+       "etherType": "ip",
+       "src": "5254.00f7.98c8",
+       "type": "ethernet"
+      },
+      {
+       "dst": [
+        "3.74.102.138"
+       ],
+       "fragment offset": 0,
+       "protocol": "esp",
+       "src": [
+        "192.168.99.11"
+       ],
+       "ttl": 63,
+       "type": "ip"
+      },
+      {
+       "nextHeader": "ip",
+       "payload": "encrypted",
+       "type": "esp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 552.3715504635436,
+         "y": 40
+        },
+        {
+         "x": 536.3715504635436,
+         "y": 34.5
+        },
+        {
+         "x": 536.3715504635436,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 504.9873761495044,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 460,
+        "y": 40
+       },
+       {
+        "x": 536.3715504635436,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [
+      "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569"
+     ],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "6582",
+     "sourceIfaceName": "GigabitEthernet0/0",
+     "style": {
+      "line": {
+       "color": 13940004,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "transit",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 0,
+      "total": 0
+     }
+    },
+    "6619!IPF-LAB@subnet-06ff93eb663576eff--subnet-06ff93eb663576eff--#573": {
+     "direction": "directed",
+     "edgeSettingsId": "a8092d28-cee8-42f8-8179-79182996b924",
+     "id": "6619!IPF-LAB@subnet-06ff93eb663576eff--subnet-06ff93eb663576eff--#573",
+     "labels": {
+      "source": [
+       {
+        "text": "subnet-06ff93eb663576eff",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [
+      "subnet-06ff93eb663576eff--eni-056071cf31e94a322--#574"
+     ],
+     "packet": [
+      {
+       "dst": [
+        "10.2.0.222"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "172.16.12.0 .. 172.16.12.255"
+       ],
+       "ttl": 125,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "8080"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 1018,
+         "y": 40
+        },
+        {
+         "x": 1002,
+         "y": 34.5
+        },
+        {
+         "x": 1002,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 960,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 900,
+        "y": 40
+       },
+       {
+        "x": 1002,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [
+      "transit--6619!IPF-LAB@vpn-0edbe102d66f932dc/outside/3.74.102.138--#572"
+     ],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "6619",
+     "sourceIfaceName": "subnet-06ff93eb663576eff",
+     "style": {
+      "line": {
+       "color": 16751103,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "subnet-06ff93eb663576eff",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 16515072,
+      "total": 16515072
+     }
+    },
+    "eni-056071cf31e94a322--host-10.2.0.222--#575": {
+     "direction": "directed",
+     "edgeSettingsId": "a8092d28-cee8-42f8-8179-79182996b924",
+     "id": "eni-056071cf31e94a322--host-10.2.0.222--#575",
+     "labels": {},
+     "nextEdgeIds": [],
+     "packet": [
+      {
+       "dst": [
+        "10.2.0.222"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "172.16.12.0 .. 172.16.12.255"
+       ],
+       "ttl": 125,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "8080"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 1350.043797956525,
+         "y": 40
+        },
+        {
+         "x": 1334.043797956525,
+         "y": 34.5
+        },
+        {
+         "x": 1334.043797956525,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 1304.9873761495046,
+         "y": 40.5
+        }
+       },
+       "source": {
+        "anchor": {
+         "x": 0,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 1288.284271247462,
+         "y": 40.5
+        }
+       },
+       "target": {
+        "anchor": {
+         "x": 1,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 1321.690481051547,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 1260,
+        "y": 40
+       },
+       {
+        "x": 1334.043797956525,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [
+      "subnet-06ff93eb663576eff--eni-056071cf31e94a322--#574"
+     ],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "eni-056071cf31e94a322",
+     "style": {
+      "line": {
+       "color": 16751103,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "host-10.2.0.222",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 0,
+      "total": 0
+     }
+    },
+    "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#566": {
+     "direction": "directed",
+     "edgeSettingsId": "a8092d28-cee8-42f8-8179-79182996b924",
+     "id": "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#566",
+     "labels": {
+      "target": [
+       {
+        "text": "Vl112",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [
+      "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569"
+     ],
+     "packet": [
+      {
+       "dst": "001c.73d9.e1d5",
+       "etherType": "ip",
+       "src": "aac1.abc4.8f7d",
+       "type": "ethernet"
+      },
+      {
+       "dst": [
+        "10.2.0.222"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "172.16.12.0 .. 172.16.12.255"
+       ],
+       "ttl": 128,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "1024 .. 65535"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 218,
+         "y": 40
+        },
+        {
+         "x": 202,
+         "y": 34.5
+        },
+        {
+         "x": 202,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 155.01262385049554,
+         "y": 40.5
+        }
+       },
+       "source": {
+        "anchor": {
+         "x": 0,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 123.309518948453,
+         "y": 40.5
+        }
+       },
+       "target": {
+        "anchor": {
+         "x": 1,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 186.7157287525381,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 87.9562020434751,
+        "y": 40
+       },
+       {
+        "x": 202,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "host-172.16.12.0 .. 172.16.12.255",
+     "style": {
+      "line": {
+       "color": 16751103,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "6571",
+     "targetIfaceName": "Vl112",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 1065420324864,
+      "total": 1065420324864
+     }
+    },
+    "ipsec-3.74.102.138-6582-6619": {
+     "direction": "directed",
+     "edgeSettingsId": "c24cb567-e4dc-4bcd-8f97-9c614c4bb6cd",
+     "id": "ipsec-3.74.102.138-6582-6619",
+     "labels": {
+      "center": [
+       {
+        "text": "ipsec-Tunnel1",
+        "type": "protocol",
+        "visible": true
+       }
+      ]
+     },
+     "loopIds": [],
+     "nextEdgeIds": [],
+     "packet": [
+      {
+       "dst": [
+        "3.74.102.138"
+       ],
+       "fragment offset": 0,
+       "protocol": "esp",
+       "src": [
+        "192.168.99.11"
+       ],
+       "ttl": 63,
+       "type": "ip"
+      },
+      {
+       "nextHeader": "ip",
+       "payload": "encrypted",
+       "type": "esp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 858,
+         "y": 40
+        },
+        {
+         "x": 842,
+         "y": 34.5
+        },
+        {
+         "x": 842,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 660,
+         "y": 40.5
+        }
+       },
+       "source": {
+        "anchor": {
+         "x": 0,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 498.2842712474619,
+         "y": 40.5
+        }
+       },
+       "target": {
+        "anchor": {
+         "x": 1,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 821.7157287525381,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 460,
+        "y": 40
+       },
+       {
+        "x": 842,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "6582",
+     "style": {
+      "line": {
+       "color": 13940004,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "6619",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 1,
+      "total": 1
+     }
+    },
+    "subnet-06ff93eb663576eff--eni-056071cf31e94a322--#574": {
+     "direction": "directed",
+     "edgeSettingsId": "a8092d28-cee8-42f8-8179-79182996b924",
+     "id": "subnet-06ff93eb663576eff--eni-056071cf31e94a322--#574",
+     "labels": {},
+     "nextEdgeIds": [
+      "eni-056071cf31e94a322--host-10.2.0.222--#575"
+     ],
+     "packet": [
+      {
+       "dst": [
+        "10.2.0.222"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "172.16.12.0 .. 172.16.12.255"
+       ],
+       "ttl": 125,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "8080"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 1218,
+         "y": 40
+        },
+        {
+         "x": 1202,
+         "y": 34.5
+        },
+        {
+         "x": 1202,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 1140,
+         "y": 40.5
+        }
+       },
+       "source": {
+        "anchor": {
+         "x": 0,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 1093.284271247462,
+         "y": 40.5
+        }
+       },
+       "target": {
+        "anchor": {
+         "x": 1,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 1186.715728752538,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 1060,
+        "y": 40
+       },
+       {
+        "x": 1202,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [
+      "6619!IPF-LAB@subnet-06ff93eb663576eff--subnet-06ff93eb663576eff--#573"
+     ],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "subnet-06ff93eb663576eff",
+     "style": {
+      "line": {
+       "color": 16751103,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "eni-056071cf31e94a322",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 16515072,
+      "total": 16515072
+     }
+    },
+    "transit--6619!IPF-LAB@vpn-0edbe102d66f932dc/outside/3.74.102.138--#572": {
+     "direction": "directed",
+     "edgeSettingsId": "c24cb567-e4dc-4bcd-8f97-9c614c4bb6cd",
+     "id": "transit--6619!IPF-LAB@vpn-0edbe102d66f932dc/outside/3.74.102.138--#572",
+     "labels": {
+      "target": [
+       {
+        "text": "vpn-0edbe102d66f932dc/outside/3.74.102.138",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [
+      "6619!IPF-LAB@subnet-06ff93eb663576eff--subnet-06ff93eb663576eff--#573"
+     ],
+     "packet": [
+      {
+       "dst": null,
+       "etherType": "ip",
+       "src": null,
+       "type": "ethernet"
+      },
+      {
+       "dst": [
+        "3.74.102.138"
+       ],
+       "fragment offset": 0,
+       "protocol": "esp",
+       "src": [
+        "192.168.99.11"
+       ],
+       "ttl": 63,
+       "type": "ip"
+      },
+      {
+       "nextHeader": "ip",
+       "payload": "encrypted",
+       "type": "esp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 858,
+         "y": 40
+        },
+        {
+         "x": 842,
+         "y": 34.5
+        },
+        {
+         "x": 842,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 755.0126238504956,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 643.1478667388805,
+        "y": 40
+       },
+       {
+        "x": 842,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [
+      "6582!vpn1xfw01@GigabitEthernet0/0--transit--#571"
+     ],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "transit",
+     "style": {
+      "line": {
+       "color": 13940004,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "6619",
+     "targetIfaceName": "vpn-0edbe102d66f932dc/outside/3.74.102.138",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 16515072,
+      "total": 16515072
+     }
+    }
+   },
+   "nodes": {
+    "6571": {
+     "boxId": "Paris-1X",
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "6571",
+     "label": "s1xgw2",
+     "parentPath": null,
+     "position": {
+      "x": 240,
+      "y": 40
+     },
+     "sn": "860E6354B51F33F3FC9EE9CF33B0A16E",
+     "type": "l3switch"
+    },
+    "6582": {
+     "boxId": "Paris-1X",
+     "children": [],
+     "droppedPackets": {
+      "6582@GigabitEthernet0/2--dropped--#0": {
+       "ifaceName": "GigabitEthernet0/2",
+       "packet": [
+        {
+         "dst": [
+          "10.2.0.222"
+         ],
+         "fragment offset": 0,
+         "protocol": "tcp",
+         "src": [
+          "172.16.12.0 .. 172.16.12.255"
+         ],
+         "ttl": 127,
+         "type": "ip"
+        },
+        {
+         "dst": [
+          "1024 .. 8079",
+          "8081 .. 65535"
+         ],
+         "flags": [],
+         "src": [
+          "1024 .. 65535"
+         ],
+         "type": "tcp"
+        }
+       ],
+       "prevEdgeIds": [
+        "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569"
+       ]
+      }
+     },
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "6582",
+     "label": "vpn1xfw01",
+     "parentPath": null,
+     "position": {
+      "x": 440,
+      "y": 40
+     },
+     "sn": "9A54UAJ4JW4",
+     "style": {
+      "background": "red"
+     },
+     "type": "fw"
+    },
+    "6619": {
+     "boxId": "AWS:890561831523/eu-central-1",
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "6619",
+     "label": "IPF-LAB",
+     "parentPath": null,
+     "position": {
+      "x": 880,
+      "y": 40
+     },
+     "sn": "tgw-0ed714a2e8eee6c34",
+     "type": "awsTgw"
+    },
+    "eni-056071cf31e94a322": {
+     "boxId": "vpc-043a024d72cd03c1d",
+     "children": [],
+     "extra": {
+      "availabilityZone": "euc1-az2",
+      "cloudNetworkId": "vpc-043a024d72cd03c1d",
+      "description": "PA-fw eth 1/2",
+      "routeTableId": "rtb-025ba8ce4d88c3335",
+      "subnetId": "subnet-06ff93eb663576eff",
+      "vendor": "aws"
+     },
+     "graphType": "pathLookup",
+     "id": "eni-056071cf31e94a322",
+     "label": "eni-056071cf31e94a322",
+     "parentPath": null,
+     "position": {
+      "x": 1240,
+      "y": 40
+     },
+     "sn": "eni-056071cf31e94a322",
+     "type": "awsEni"
+    },
+    "host-10.2.0.222": {
+     "boxId": "vpc-043a024d72cd03c1d",
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "host-10.2.0.222",
+     "label": "host: 10.2.0.222",
+     "parentPath": null,
+     "position": {
+      "x": 1400,
+      "y": 40
+     },
+     "sn": "host-10.2.0.222",
+     "style": {
+      "background": "blue"
+     },
+     "type": "cloud"
+    },
+    "host-172.16.12.0 .. 172.16.12.255": {
+     "boxId": "Paris-1X",
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "host-172.16.12.0 .. 172.16.12.255",
+     "label": "host: 172.16.12.0 .. 172.16.12.255",
+     "parentPath": null,
+     "position": {
+      "x": 40,
+      "y": 40
+     },
+     "sn": "host-172.16.12.0 .. 172.16.12.255",
+     "style": {
+      "background": "blue"
+     },
+     "type": "cloud"
+    },
+    "subnet-06ff93eb663576eff": {
+     "boxId": "vpc-043a024d72cd03c1d",
+     "children": [],
+     "extra": {
+      "availabilityZone": "euc1-az2",
+      "cloudConstructName": "lab3",
+      "cloudNetworkId": "vpc-043a024d72cd03c1d",
+      "routeTableId": "rtb-025ba8ce4d88c3335",
+      "vendor": "aws"
+     },
+     "graphType": "pathLookup",
+     "id": "subnet-06ff93eb663576eff",
+     "label": "lab3 (10.2.0.192/27)",
+     "parentPath": null,
+     "position": {
+      "x": 1040,
+      "y": 40
+     },
+     "sn": "subnet-06ff93eb663576eff",
+     "type": "awsSubnet"
+    },
+    "transit": {
+     "boxId": null,
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "transit",
+     "label": "transit",
+     "parentPath": null,
+     "position": {
+      "x": 600,
+      "y": 40
+     },
+     "sn": "transit",
+     "type": "transit"
+    }
+   }
+  },
+  "settings": {
+   "edges": [
+    {
+     "grouped": false,
+     "id": "6129bb53-d19d-47ee-8f45-8829073221c1",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "vxlan",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "f61ad8e8-ce17-11eb-b8bc-0242ac130003",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "capwap",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "7f6aa12d-84da-4481-a968-2119085d2778",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "gre",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "c24cb567-e4dc-4bcd-8f97-9c614c4bb6cd",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "esp",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "f79f180a-9997-4931-9724-97e66b61b79c",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "mpls",
+     "style": {
+      "color": "#ff9800",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "e75cbfc0-71c1-4026-8803-08b6f52ee26e",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ethernetVlan",
+     "style": {
+      "color": "#99ccff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "a8092d28-cee8-42f8-8179-79182996b924",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ip",
+     "style": {
+      "color": "#ff99ff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "b2e1c7a4-5f3a-4c8e-9e2a-7d8f6b1c2e3f",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ipv6",
+     "style": {
+      "color": "#ff99ff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "507051b3-aae8-462d-85c4-d5ba1518a1fd",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ethernet",
+     "style": {
+      "color": "#7aa3cc",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "2bee1ab7-8bfe-470e-9e31-6d0e6917f89d",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "fp",
+     "style": {
+      "color": "#ff9800",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "2e18897e-45c7-4ec8-ae33-bdab14c03f5b",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "aws",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "823d51bb-4ac7-4a71-b3a9-68e05c132507",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "vcmp",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "304c23e5-0119-4460-86c9-4fe077b135f2",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "meraki-vpn",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    }
+   ],
+   "pathLookup": {
+    "colorDetectedLoops": true,
+    "ignoredTopics": []
+   }
+  }
+ },
+ "pathlookup": {
+  "check": {
+   "exists": false
+  },
+  "decisions": {
+   "6571": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 0,
+       "10": 0,
+       "20": 0,
+       "30": 0
+      },
+      "sourcePacketId": "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#566",
+      "targetPacketId": "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "field": "ethernet.dst",
+          "type": "packet data match",
+          "value": "001c.73d9.e1d5"
+         },
+         {
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "remove header"
+         }
+        ],
+        "phase": "in"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "type": "route detail",
+          "value": "mode routing"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 24,
+           "prefix": "10.2.0.0",
+           "vrf": "default"
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 127
+          },
+          "type": "patch header"
+         },
+         {
+          "filter": {
+           "ip": "10.255.1.6",
+           "vrf": "default"
+          },
+          "table": "vArp",
+          "type": "table entry match"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "header": {
+           "dst": "5254.0033.3a0f",
+           "etherType": "ip",
+           "src": "caf0.0008.0002",
+           "type": "ethernet"
+          },
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "insert header"
+         }
+        ],
+        "phase": "out"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {
+     "Vl112": [
+      "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#566"
+     ]
+    },
+    "trafficOut": {
+     "Et2": [
+      "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569"
+     ]
+    }
+   },
+   "6582": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 0,
+       "10": 0,
+       "20": 0,
+       "30": 1
+      },
+      "sourcePacketId": "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569",
+      "targetPacketId": "6582@GigabitEthernet0/2--dropped--#0",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "field": "ethernet.dst",
+          "type": "packet data match",
+          "value": "5254.0033.3a0f"
+         },
+         {
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "remove header"
+         },
+         {
+          "headerType": "tcp",
+          "index": 1,
+          "patch": {
+           "dst": [
+            "1024 .. 8079",
+            "8081 .. 65535"
+           ]
+          },
+          "type": "patch header"
+         },
+         {
+          "reason": "Security rules: packet denied.",
+          "type": "drop packet"
+         },
+         {
+          "allHidden": false,
+          "decidingPolicyName": "LAN_TO_WAN",
+          "decidingRule": [
+           0,
+           1,
+           6
+          ],
+          "isDefaultRule": true,
+          "isInvisible": false,
+          "protocolId": "5ceda2e9-3350-408a-b2b6-9a059eb486de",
+          "securityType": "acl",
+          "severityInfo": {
+           "name": "ACL_DENY",
+           "severity": 30,
+           "topic": "ACL"
+          },
+          "type": "security check"
+         }
+        ],
+        "phase": "in"
+       }
+      ]
+     },
+     {
+      "severityInfo": {
+       "0": 1,
+       "10": 0,
+       "20": 0,
+       "30": 0
+      },
+      "sourcePacketId": "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569",
+      "targetPacketId": "6582!vpn1xfw01@GigabitEthernet0/0--transit--#571",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "field": "ethernet.dst",
+          "type": "packet data match",
+          "value": "5254.0033.3a0f"
+         },
+         {
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "remove header"
+         },
+         {
+          "headerType": "tcp",
+          "index": 1,
+          "patch": {
+           "dst": [
+            "8080"
+           ]
+          },
+          "type": "patch header"
+         },
+         {
+          "allHidden": false,
+          "decidingPolicyName": "LAN_TO_WAN",
+          "decidingRule": [
+           0,
+           1,
+           5
+          ],
+          "isDefaultRule": false,
+          "isInvisible": false,
+          "protocolId": "5ceda2e9-3350-408a-b2b6-9a059eb486de",
+          "securityType": "acl",
+          "severityInfo": {
+           "name": "ACL_PERMIT",
+           "severity": 0,
+           "topic": "ACL"
+          },
+          "type": "security check"
+         }
+        ],
+        "phase": "in"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "type": "route detail",
+          "value": "mode routing"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 24,
+           "prefix": "10.2.0.0",
+           "vrf": ""
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 126
+          },
+          "type": "patch header"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ipsec-tunnel",
+        "events": [
+         {
+          "headerType": "tcp",
+          "index": 1,
+          "reason": "IP sec tunnel begin",
+          "type": "remove header"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "reason": "IP sec tunnel begin",
+          "type": "remove header"
+         },
+         {
+          "filter": {
+           "localGateway": "192.168.99.11",
+           "remoteGateway": "3.74.102.138"
+          },
+          "table": "vIpSecTunnels",
+          "type": "table entry match"
+         },
+         {
+          "header": {
+           "nextHeader": "ip",
+           "payload": "encrypted",
+           "type": "esp"
+          },
+          "headerType": "esp",
+          "index": 0,
+          "type": "insert header"
+         },
+         {
+          "header": {
+           "dst": [
+            "3.74.102.138"
+           ],
+           "fragment offset": 0,
+           "protocol": "esp",
+           "src": [
+            "192.168.99.11"
+           ],
+           "ttl": 64,
+           "type": "ip"
+          },
+          "headerType": "ip",
+          "index": 0,
+          "type": "insert header"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 32,
+           "prefix": "3.74.102.138",
+           "vrf": ""
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 63
+          },
+          "type": "patch header"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "header": {
+           "dst": null,
+           "etherType": "ip",
+           "src": "5254.00f7.98c8",
+           "type": "ethernet"
+          },
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "insert header"
+         }
+        ],
+        "phase": "out"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {
+     "GigabitEthernet0/2": [
+      "6571!s1xgw2@Et2--6582!vpn1xfw01@GigabitEthernet0/2--#569"
+     ]
+    },
+    "trafficOut": {
+     "GigabitEthernet0/0": [
+      "6582!vpn1xfw01@GigabitEthernet0/0--transit--#571"
+     ]
+    }
+   },
+   "6619": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 0,
+       "10": 0,
+       "20": 0,
+       "30": 0
+      },
+      "sourcePacketId": "transit--6619!IPF-LAB@vpn-0edbe102d66f932dc/outside/3.74.102.138--#572",
+      "targetPacketId": "6619!IPF-LAB@subnet-06ff93eb663576eff--subnet-06ff93eb663576eff--#573",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "field": "ethernet.dst",
+          "type": "packet data match",
+          "value": null
+         },
+         {
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "remove header"
+         },
+         {
+          "field": "ip.dst",
+          "type": "packet data match",
+          "value": [
+           "3.74.102.138"
+          ]
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "reason": "ESP encapsulation end",
+          "tunnelDstIp": "3.74.102.138",
+          "type": "remove header"
+         },
+         {
+          "headerType": "esp",
+          "index": 0,
+          "reason": "ESP encapsulation end",
+          "type": "remove header"
+         },
+         {
+          "header": {
+           "dst": [
+            "8080"
+           ],
+           "flags": [],
+           "src": [
+            "1024 .. 65535"
+           ],
+           "type": "tcp"
+          },
+          "headerType": "tcp",
+          "index": 0,
+          "type": "insert header"
+         },
+         {
+          "header": {
+           "dst": [
+            "10.2.0.222"
+           ],
+           "fragment offset": 0,
+           "protocol": "tcp",
+           "src": [
+            "172.16.12.0 .. 172.16.12.255"
+           ],
+           "ttl": 126,
+           "type": "ip"
+          },
+          "headerType": "ip",
+          "index": 0,
+          "type": "insert header"
+         }
+        ],
+        "phase": "in"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "type": "route detail",
+          "value": "mode routing"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 24,
+           "prefix": "10.2.0.0",
+           "vrf": "tgw-rtb-0912221debb346727"
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 125
+          },
+          "type": "patch header"
+         }
+        ],
+        "phase": "core"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {
+     "vpn-0edbe102d66f932dc/outside/3.74.102.138": [
+      "transit--6619!IPF-LAB@vpn-0edbe102d66f932dc/outside/3.74.102.138--#572"
+     ]
+    },
+    "trafficOut": {
+     "subnet-06ff93eb663576eff": [
+      "6619!IPF-LAB@subnet-06ff93eb663576eff--subnet-06ff93eb663576eff--#573"
+     ]
+    }
+   },
+   "eni-056071cf31e94a322": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 0,
+       "10": 0,
+       "20": 0,
+       "30": 0
+      },
+      "sourcePacketId": "subnet-06ff93eb663576eff--eni-056071cf31e94a322--#574",
+      "targetPacketId": "eni-056071cf31e94a322--host-10.2.0.222--#575",
+      "trace": [
+       {
+        "chain": "cloud-vnic-in",
+        "events": [
+         {
+          "direction": "inbound",
+          "ip": "167903454",
+          "matched": true,
+          "type": "cloud vnic ip check",
+          "vnicId": "eni-056071cf31e94a322"
+         },
+         {
+          "destinationIp": "10.2.0.222",
+          "type": "cloud vnic workload handoff",
+          "vnicId": "eni-056071cf31e94a322"
+         }
+        ],
+        "phase": "in"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {
+     "inbound": [
+      "subnet-06ff93eb663576eff--eni-056071cf31e94a322--#574"
+     ]
+    },
+    "trafficOut": {
+     "inbound": [
+      "eni-056071cf31e94a322--host-10.2.0.222--#575"
+     ]
+    }
+   },
+   "subnet-06ff93eb663576eff": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 0,
+       "10": 0,
+       "20": 0,
+       "30": 0
+      },
+      "sourcePacketId": "6619!IPF-LAB@subnet-06ff93eb663576eff--subnet-06ff93eb663576eff--#573",
+      "targetPacketId": "subnet-06ff93eb663576eff--eni-056071cf31e94a322--#574",
+      "trace": [
+       {
+        "chain": "cloud-subnet",
+        "events": [
+         {
+          "cidr": "10.2.0.192/27",
+          "matched": true,
+          "subnetId": "subnet-06ff93eb663576eff",
+          "type": "cloud subnet range check"
+         },
+         {
+          "dstIp": "10.2.0.222",
+          "resolvedVnicId": "eni-056071cf31e94a322",
+          "subnetId": "subnet-06ff93eb663576eff",
+          "type": "cloud subnet vnic lookup"
+         }
+        ],
+        "phase": "core"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {
+     "forward": [
+      "6619!IPF-LAB@subnet-06ff93eb663576eff--subnet-06ff93eb663576eff--#573"
+     ]
+    },
+    "trafficOut": {
+     "forward": [
+      "subnet-06ff93eb663576eff--eni-056071cf31e94a322--#574"
+     ]
+    }
+   }
+  },
+  "eventsSummary": {
+   "flags": [
+    "acl-deny"
+   ],
+   "global": [],
+   "topics": {
+    "ACL": {
+     "0": 1,
+     "10": 0,
+     "20": 0,
+     "30": 1
+    },
+    "FORWARDING": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "NAT44": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "PBR": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "ZONEFW": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    }
+   }
+  },
+  "passingTraffic": "part"
+ }
+}

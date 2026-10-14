@@ -1,0 +1,51 @@
+== verdict ==
+status: PARTIAL
+details: Reached 10.2.0.222:8080; denied [acl-deny]: vpn1xfw01 [fw] on GigabitEthernet0/2 (ports: 1024 .. 8079, 8081 .. 65535)
+blocked_at: vpn1xfw01 [fw]
+rule: acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+branches: 1
+
+== destinations ==
+host: 10.2.0.222 [cloud] ips=['10.2.0.222'] ports=['8080']
+
+== blocked hops ==
+vpn1xfw01 [fw] drop=Security rules: packet denied.
+    acl 'LAN_TO_WAN' rule=[0, 1, 6] -> ACL_DENY
+
+== hops ==
+-      host: 172.16.12.0 .. 172.16.12.255 [cloud] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      s1xgw2 [l3switch] in=['Vl112'] out=['Et2'] proto=ip vrf=default blocked=False terminal=False
+-      vpn1xfw01 [fw] in=['GigabitEthernet0/2'] out=['GigabitEthernet0/0'] proto=esp vrf= blocked=True terminal=False
+-      transit [transit] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      IPF-LAB [awsTgw] in=['vpn-0edbe102d66f932dc/outside/3.74.102.138'] out=['subnet-06ff93eb663576eff'] proto=esp vrf=tgw-rtb-0912221debb346727 blocked=False terminal=False
+-      lab3 (10.2.0.192/27) [awsSubnet] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      eni-056071cf31e94a322 [awsEni] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      host: 10.2.0.222 [cloud] in=None out=None proto=n/a vrf=None blocked=False terminal=True
+
+== tree ==
+• host: 172.16.12.0 .. 172.16.12.255 cloud     [- → -]  n/a
+• s1xgw2                             l3switch  [Vl112 → Et2]  ip  vrf=default
+• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED
+     🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+     🔒 ✅ acl 'LAN_TO_WAN' rule=[0, 1, 5] → ACL_PERMIT
+     ✗ Security rules: packet denied.
+• transit                            transit   [- → -]  n/a
+• IPF-LAB                            awsTgw    [vpn-0edbe102d66f932dc/outside/3.74.102.138 → subnet-06ff93eb663576eff]  
+esp  vrf=tgw-rtb-0912221debb346727
+• lab3 (10.2.0.192/27)               awsSubnet [- → -]  n/a
+• eni-056071cf31e94a322              awsEni    [- → -]  n/a
+• host: 10.2.0.222                   cloud     [- → -]  n/a
+
+== tree --l2 ==
+• host: 172.16.12.0 .. 172.16.12.255 cloud     [- → -]  n/a
+• s1xgw2                             l3switch  [Vl112 → Et2]  ip  vrf=default
+• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED
+     🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+     🔒 ✅ acl 'LAN_TO_WAN' rule=[0, 1, 5] → ACL_PERMIT
+     ✗ Security rules: packet denied.
+• transit                            transit   [- → -]  n/a
+• IPF-LAB                            awsTgw    [vpn-0edbe102d66f932dc/outside/3.74.102.138 → subnet-06ff93eb663576eff]  
+esp  vrf=tgw-rtb-0912221debb346727
+• lab3 (10.2.0.192/27)               awsSubnet [- → -]  n/a
+• eni-056071cf31e94a322              awsEni    [- → -]  n/a
+• host: 10.2.0.222                   cloud     [- → -]  n/a

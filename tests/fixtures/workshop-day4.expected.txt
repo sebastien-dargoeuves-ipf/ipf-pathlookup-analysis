@@ -1,0 +1,102 @@
+== verdict ==
+status: REACHED
+details: Reached 172.16.31.60:80; 172.16.31.61, 172.16.31.63:80; 172.16.31.62:80
+blocked_at: 
+rule: 
+branches: 12
+
+== destinations ==
+host: 172.16.31.60 [host] ips=['172.16.31.60'] ports=['80']
+host: 172.16.31.61 172.16.31.63 [cloud] ips=['172.16.31.61', '172.16.31.63'] ports=['80']
+host: 172.16.31.62 [host] ips=['172.16.31.62'] ports=['80']
+
+== blocked hops ==
+
+== hops ==
+-      host: 172.16.11.60 [host] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      s1xsw05 [switch] in=['Et1/0'] out=['Et0/1'] proto=l2 vrf=None blocked=False terminal=False
+-      s1xsw03 [switch] in=['Et1/3'] out=['Et0/1'] proto=l2 vrf=None blocked=False terminal=False
+-      s1xsw01 [switch] in=['Et1/0'] out=['Et0/1'] proto=l2 vrf=None blocked=False terminal=False
+-      s1xgw1 [l3switch] in=['Et7'] out=['Et1'] proto=ip vrf=default blocked=False terminal=False
+-      d1xfw01 [fw] in=['ge-0/0/2.0'] out=['ge-0/0/0.0', 'ge-0/0/1.0'] proto=ip vrf=master blocked=False terminal=False
+↳1     d1xr01 [router] in=['Et0/2'] out=['Et1/1'] proto=ip vrf= blocked=False terminal=False
+↳1     edge1x01 [router] in=['GigabitEthernet2'] out=['GigabitEthernet4.mpls', 'GigabitEthernet5.public-internet'] proto=mpls vrf=100 blocked=False terminal=False
+↳1↳1   edge3x01 [router] in=['GigabitEthernet4.mpls'] out=['GigabitEthernet3'] proto=mpls vrf=100 blocked=False terminal=False
+↳1↳2   edge3x01 [router] in=['GigabitEthernet5.public-internet'] out=['GigabitEthernet3'] proto=mpls vrf=100 blocked=False terminal=False
+↳2     d1xr02 [router] in=['Et0/2'] out=['Et1/1'] proto=ip vrf= blocked=False terminal=False
+↳2     edge1x01 [router] in=['GigabitEthernet3'] out=['GigabitEthernet4.mpls', 'GigabitEthernet5.public-internet'] proto=mpls vrf=100 blocked=False terminal=False
+↳2↳1   edge3x01 [router] in=['GigabitEthernet4.mpls'] out=['GigabitEthernet3'] proto=mpls vrf=100 blocked=False terminal=False
+↳2↳2   edge3x01 [router] in=['GigabitEthernet5.public-internet'] out=['GigabitEthernet3'] proto=mpls vrf=100 blocked=False terminal=False
+-      d3xr02 [router] in=['Gi0/4'] out=['Gi0/2'] proto=ip vrf= blocked=False terminal=False
+-      d3xfw02 [fw] in=['port2'] out=['port3'] proto=ip vrf= blocked=False terminal=False
+-      s3xgw2 [l3switch] in=['Et1'] out=['Et7'] proto=ip vrf=default blocked=False terminal=False
+-      s3xlbr01 [router] in=['Et2'] out=['Et4'] proto=ip vrf=default blocked=False terminal=False
+-      lb3x02 [lb] in=['Vl1'] out=['Vl200'] proto=ip vrf=0 blocked=False terminal=False
+-      s3xlbsw01 [switch] in=['Et2'] out=['Et3', 'Et5', 'Vl331'] proto=ip vrf=default blocked=False terminal=False
+↳1     host: 172.16.31.60 [host] in=None out=None proto=n/a vrf=None blocked=False terminal=True
+↳2     host: 172.16.31.61 172.16.31.63 [cloud] in=None out=None proto=n/a vrf=None blocked=False terminal=True
+↳3     host: 172.16.31.62 [host] in=None out=None proto=n/a vrf=None blocked=False terminal=True
+
+== tree ==
+• host: 172.16.11.60              host     [- → -]  n/a
+• s1xsw05                         switch   [Et1/0 → Et0/1]  l2
+• s1xsw03                         switch   [Et1/3 → Et0/1]  l2
+• s1xsw01                         switch   [Et1/0 → Et0/1]  l2
+• s1xgw1                          l3switch [Et7 → Et1]  ip  vrf=default
+• d1xfw01                         fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master
+     🔒 ✅ zoneFw 'SITE1@CORE' rule=[1, 2, 3] → ZONEFW_PERMIT
+╠═ parallel:
+  • d1xr01                          router   [Et0/2 → Et1/1]  ip
+  • edge1x01                        router   [GigabitEthernet2 → GigabitEthernet4.mpls,GigabitEthernet5.public-internet]
+mpls  vrf=100
+  ╠═ parallel:
+    • edge3x01                        router   [GigabitEthernet4.mpls → GigabitEthernet3]  mpls  vrf=100
+    • edge3x01                        router   [GigabitEthernet5.public-internet → GigabitEthernet3]  mpls  vrf=100
+  • d1xr02                          router   [Et0/2 → Et1/1]  ip
+  • edge1x01                        router   [GigabitEthernet3 → GigabitEthernet4.mpls,GigabitEthernet5.public-internet]
+mpls  vrf=100
+  ╠═ parallel:
+    • edge3x01                        router   [GigabitEthernet4.mpls → GigabitEthernet3]  mpls  vrf=100
+    • edge3x01                        router   [GigabitEthernet5.public-internet → GigabitEthernet3]  mpls  vrf=100
+• d3xr02                          router   [Gi0/4 → Gi0/2]  ip
+• d3xfw02                         fw       [port2 → port3]  ip
+     🔒 ✅ zoneFw 'port2->port3' rule=[0, 0, 0] → ZONEFW_PERMIT
+• s3xgw2                          l3switch [Et1 → Et7]  ip  vrf=default
+• s3xlbr01                        router   [Et2 → Et4]  ip  vrf=default
+• lb3x02                          lb       [Vl1 → Vl200]  ip  vrf=0
+• s3xlbsw01                       switch   [Et2 → Et3,Et5,Vl331]  ip  vrf=default
+╠═ parallel:
+  • host: 172.16.31.60              host     [- → -]  n/a
+  • host: 172.16.31.61 172.16.31.63 cloud    [- → -]  n/a
+  • host: 172.16.31.62              host     [- → -]  n/a
+
+== tree --l2 ==
+• host: 172.16.11.60              host     [- → -]  n/a
+... l2/fp skipped ...
+• s1xgw1                          l3switch [Et7 → Et1]  ip  vrf=default
+• d1xfw01                         fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master
+     🔒 ✅ zoneFw 'SITE1@CORE' rule=[1, 2, 3] → ZONEFW_PERMIT
+╠═ parallel:
+  • d1xr01                          router   [Et0/2 → Et1/1]  ip
+  • edge1x01                        router   [GigabitEthernet2 → GigabitEthernet4.mpls,GigabitEthernet5.public-internet]
+mpls  vrf=100
+  ╠═ parallel:
+    • edge3x01                        router   [GigabitEthernet4.mpls → GigabitEthernet3]  mpls  vrf=100
+    • edge3x01                        router   [GigabitEthernet5.public-internet → GigabitEthernet3]  mpls  vrf=100
+  • d1xr02                          router   [Et0/2 → Et1/1]  ip
+  • edge1x01                        router   [GigabitEthernet3 → GigabitEthernet4.mpls,GigabitEthernet5.public-internet]
+mpls  vrf=100
+  ╠═ parallel:
+    • edge3x01                        router   [GigabitEthernet4.mpls → GigabitEthernet3]  mpls  vrf=100
+    • edge3x01                        router   [GigabitEthernet5.public-internet → GigabitEthernet3]  mpls  vrf=100
+• d3xr02                          router   [Gi0/4 → Gi0/2]  ip
+• d3xfw02                         fw       [port2 → port3]  ip
+     🔒 ✅ zoneFw 'port2->port3' rule=[0, 0, 0] → ZONEFW_PERMIT
+• s3xgw2                          l3switch [Et1 → Et7]  ip  vrf=default
+• s3xlbr01                        router   [Et2 → Et4]  ip  vrf=default
+• lb3x02                          lb       [Vl1 → Vl200]  ip  vrf=0
+• s3xlbsw01                       switch   [Et2 → Et3,Et5,Vl331]  ip  vrf=default
+╠═ parallel:
+  • host: 172.16.31.60              host     [- → -]  n/a
+  • host: 172.16.31.61 172.16.31.63 cloud    [- → -]  n/a
+  • host: 172.16.31.62              host     [- → -]  n/a
