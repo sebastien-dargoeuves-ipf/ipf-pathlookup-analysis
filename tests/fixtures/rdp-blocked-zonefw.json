@@ -1,0 +1,1074 @@
+{
+ "graphResult": {
+  "boxLabels": {
+   "Paris-1X": "Paris-1X"
+  },
+  "graphData": {
+   "edges": {
+    "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536": {
+     "direction": "directed",
+     "edgeSettingsId": "a8092d28-cee8-42f8-8179-79182996b924",
+     "id": "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536",
+     "labels": {
+      "source": [
+       {
+        "text": "Et1",
+        "type": "intName",
+        "visible": true
+       }
+      ],
+      "target": [
+       {
+        "text": "ge-0/0/3.0",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [
+      "6684@ge-0/0/3.0--dropped--#0",
+      "6684@ge-0/0/3.0--dropped--#1"
+     ],
+     "packet": [
+      {
+       "dst": "5254.00ff.cd96",
+       "etherType": "ip",
+       "src": "caf0.0008.0001",
+       "type": "ethernet"
+      },
+      {
+       "dst": [
+        "172.16.23.20"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "172.16.12.0 .. 172.16.12.255"
+       ],
+       "ttl": 127,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "3389"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 378,
+         "y": 40
+        },
+        {
+         "x": 362,
+         "y": 34.5
+        },
+        {
+         "x": 362,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 320,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 260,
+        "y": 40
+       },
+       {
+        "x": 362,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [
+      "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#533"
+     ],
+     "severityInfo": {
+      "0": 2,
+      "10": 0,
+      "20": 0,
+      "30": 2
+     },
+     "shift": 0,
+     "source": "6571",
+     "sourceIfaceName": "Et1",
+     "style": {
+      "line": {
+       "color": 16751103,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "6684",
+     "targetIfaceName": "ge-0/0/3.0",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 16515072,
+      "forwarded": 0,
+      "total": 16515072
+     }
+    },
+    "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#533": {
+     "direction": "directed",
+     "edgeSettingsId": "a8092d28-cee8-42f8-8179-79182996b924",
+     "id": "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#533",
+     "labels": {
+      "target": [
+       {
+        "text": "Vl112",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [
+      "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536"
+     ],
+     "packet": [
+      {
+       "dst": "001c.73d9.e1d5",
+       "etherType": "ip",
+       "src": "aac1.abc4.8f7d",
+       "type": "ethernet"
+      },
+      {
+       "dst": [
+        "172.16.23.20"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "172.16.12.0 .. 172.16.12.255"
+       ],
+       "ttl": 128,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "3389"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 218,
+         "y": 40
+        },
+        {
+         "x": 202,
+         "y": 34.5
+        },
+        {
+         "x": 202,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 155.01262385049554,
+         "y": 40.5
+        }
+       },
+       "source": {
+        "anchor": {
+         "x": 0,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 123.309518948453,
+         "y": 40.5
+        }
+       },
+       "target": {
+        "anchor": {
+         "x": 1,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 186.7157287525381,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 87.9562020434751,
+        "y": 40
+       },
+       {
+        "x": 202,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "host-172.16.12.0 .. 172.16.12.255",
+     "style": {
+      "line": {
+       "color": 16751103,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "6571",
+     "targetIfaceName": "Vl112",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 16515072,
+      "total": 16515072
+     }
+    }
+   },
+   "nodes": {
+    "6571": {
+     "boxId": "Paris-1X",
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "6571",
+     "label": "s1xgw2",
+     "parentPath": null,
+     "position": {
+      "x": 240,
+      "y": 40
+     },
+     "sn": "860E6354B51F33F3FC9EE9CF33B0A16E",
+     "type": "l3switch"
+    },
+    "6684": {
+     "boxId": "Paris-1X",
+     "children": [],
+     "droppedPackets": {
+      "6684@ge-0/0/3.0--dropped--#0": {
+       "ifaceName": "ge-0/0/3.0",
+       "packet": [
+        {
+         "dst": [
+          "172.16.23.20"
+         ],
+         "fragment offset": 0,
+         "protocol": "tcp",
+         "src": [
+          "172.16.12.0 .. 172.16.12.255"
+         ],
+         "ttl": 126,
+         "type": "ip"
+        },
+        {
+         "dst": [
+          "3389"
+         ],
+         "flags": [],
+         "src": [
+          "1024 .. 65535"
+         ],
+         "type": "tcp"
+        }
+       ],
+       "prevEdgeIds": [
+        "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536"
+       ]
+      },
+      "6684@ge-0/0/3.0--dropped--#1": {
+       "ifaceName": "ge-0/0/3.0",
+       "packet": [
+        {
+         "dst": [
+          "172.16.23.20"
+         ],
+         "fragment offset": 0,
+         "protocol": "tcp",
+         "src": [
+          "172.16.12.0 .. 172.16.12.255"
+         ],
+         "ttl": 126,
+         "type": "ip"
+        },
+        {
+         "dst": [
+          "3389"
+         ],
+         "flags": [],
+         "src": [
+          "1024 .. 65535"
+         ],
+         "type": "tcp"
+        }
+       ],
+       "prevEdgeIds": [
+        "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536"
+       ]
+      }
+     },
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "6684",
+     "label": "d1xfw01",
+     "parentPath": null,
+     "position": {
+      "x": 400,
+      "y": 40
+     },
+     "sn": "9c50ed85a670",
+     "style": {
+      "background": "red"
+     },
+     "type": "fw"
+    },
+    "host-172.16.12.0 .. 172.16.12.255": {
+     "boxId": "Paris-1X",
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "host-172.16.12.0 .. 172.16.12.255",
+     "label": "host: 172.16.12.0 .. 172.16.12.255",
+     "parentPath": null,
+     "position": {
+      "x": 40,
+      "y": 40
+     },
+     "sn": "host-172.16.12.0 .. 172.16.12.255",
+     "style": {
+      "background": "blue"
+     },
+     "type": "cloud"
+    }
+   }
+  },
+  "settings": {
+   "edges": [
+    {
+     "grouped": false,
+     "id": "6129bb53-d19d-47ee-8f45-8829073221c1",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "vxlan",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "f61ad8e8-ce17-11eb-b8bc-0242ac130003",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "capwap",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "7f6aa12d-84da-4481-a968-2119085d2778",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "gre",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "c24cb567-e4dc-4bcd-8f97-9c614c4bb6cd",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "esp",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "f79f180a-9997-4931-9724-97e66b61b79c",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "mpls",
+     "style": {
+      "color": "#ff9800",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "e75cbfc0-71c1-4026-8803-08b6f52ee26e",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ethernetVlan",
+     "style": {
+      "color": "#99ccff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "a8092d28-cee8-42f8-8179-79182996b924",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ip",
+     "style": {
+      "color": "#ff99ff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "b2e1c7a4-5f3a-4c8e-9e2a-7d8f6b1c2e3f",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ipv6",
+     "style": {
+      "color": "#ff99ff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "507051b3-aae8-462d-85c4-d5ba1518a1fd",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ethernet",
+     "style": {
+      "color": "#7aa3cc",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "2bee1ab7-8bfe-470e-9e31-6d0e6917f89d",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "fp",
+     "style": {
+      "color": "#ff9800",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "2e18897e-45c7-4ec8-ae33-bdab14c03f5b",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "aws",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "823d51bb-4ac7-4a71-b3a9-68e05c132507",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "vcmp",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "304c23e5-0119-4460-86c9-4fe077b135f2",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "meraki-vpn",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    }
+   ],
+   "pathLookup": {
+    "colorDetectedLoops": true,
+    "ignoredTopics": []
+   }
+  }
+ },
+ "pathlookup": {
+  "check": {
+   "exists": true,
+   "expectedPassingTraffic": "none"
+  },
+  "decisions": {
+   "6571": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 0,
+       "10": 0,
+       "20": 0,
+       "30": 0
+      },
+      "sourcePacketId": "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#533",
+      "targetPacketId": "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "field": "ethernet.dst",
+          "type": "packet data match",
+          "value": "001c.73d9.e1d5"
+         },
+         {
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "remove header"
+         }
+        ],
+        "phase": "in"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "type": "route detail",
+          "value": "mode routing"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 24,
+           "prefix": "172.16.23.0",
+           "vrf": "default"
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 127
+          },
+          "type": "patch header"
+         },
+         {
+          "filter": {
+           "ip": "10.1.0.81",
+           "vrf": "default"
+          },
+          "table": "vArp",
+          "type": "table entry match"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "header": {
+           "dst": "5254.00ff.cd96",
+           "etherType": "ip",
+           "src": "caf0.0008.0001",
+           "type": "ethernet"
+          },
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "insert header"
+         }
+        ],
+        "phase": "out"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {
+     "Vl112": [
+      "host-172.16.12.0 .. 172.16.12.255--6571!s1xgw2@Vl112--#533"
+     ]
+    },
+    "trafficOut": {
+     "Et1": [
+      "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536"
+     ]
+    }
+   },
+   "6684": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 1,
+       "10": 0,
+       "20": 0,
+       "30": 1
+      },
+      "sourcePacketId": "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536",
+      "targetPacketId": "6684@ge-0/0/3.0--dropped--#0",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "field": "ethernet.dst",
+          "type": "packet data match",
+          "value": "5254.00ff.cd96"
+         },
+         {
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "remove header"
+         },
+         {
+          "decidingPolicyName": "natPreRouting",
+          "decidingRule": [
+           0,
+           1
+          ],
+          "protocolId": "b2627f28-5669-47b9-ab1c-0516eff40bc2",
+          "securityType": "nat44",
+          "severityInfo": {
+           "name": "NAT44_PERMIT",
+           "severity": 0,
+           "topic": "NAT44"
+          },
+          "type": "destination NAT"
+         }
+        ],
+        "phase": "in"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "type": "route detail",
+          "value": "mode routing"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 24,
+           "prefix": "172.16.23.0",
+           "vrf": "master"
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 126
+          },
+          "type": "patch header"
+         },
+         {
+          "filter": {
+           "ip": "10.1.0.70",
+           "vrf": "master"
+          },
+          "table": "vArp",
+          "type": "table entry match"
+         },
+         {
+          "reason": "Security rules: packet denied.",
+          "type": "drop packet"
+         },
+         {
+          "allHidden": false,
+          "decidingPolicyName": "SITE1@CORE",
+          "decidingRule": [
+           1,
+           2,
+           10
+          ],
+          "isDefaultRule": false,
+          "isInvisible": false,
+          "protocolId": "e82b05af-ba4d-432c-9743-d43fe7e34711",
+          "securityType": "zoneFw",
+          "severityInfo": {
+           "name": "ZONEFW_DENY",
+           "severity": 30,
+           "topic": "ZONEFW"
+          },
+          "type": "security check"
+         }
+        ],
+        "phase": "core"
+       }
+      ]
+     },
+     {
+      "severityInfo": {
+       "0": 1,
+       "10": 0,
+       "20": 0,
+       "30": 1
+      },
+      "sourcePacketId": "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536",
+      "targetPacketId": "6684@ge-0/0/3.0--dropped--#1",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "field": "ethernet.dst",
+          "type": "packet data match",
+          "value": "5254.00ff.cd96"
+         },
+         {
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "remove header"
+         },
+         {
+          "decidingPolicyName": "natPreRouting",
+          "decidingRule": [
+           0,
+           1
+          ],
+          "protocolId": "b2627f28-5669-47b9-ab1c-0516eff40bc2",
+          "securityType": "nat44",
+          "severityInfo": {
+           "name": "NAT44_PERMIT",
+           "severity": 0,
+           "topic": "NAT44"
+          },
+          "type": "destination NAT"
+         }
+        ],
+        "phase": "in"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "type": "route detail",
+          "value": "mode routing"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 24,
+           "prefix": "172.16.23.0",
+           "vrf": "master"
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 126
+          },
+          "type": "patch header"
+         },
+         {
+          "filter": {
+           "ip": "10.1.0.74",
+           "vrf": "master"
+          },
+          "table": "vArp",
+          "type": "table entry match"
+         },
+         {
+          "reason": "Security rules: packet denied.",
+          "type": "drop packet"
+         },
+         {
+          "allHidden": false,
+          "decidingPolicyName": "SITE1@CORE",
+          "decidingRule": [
+           1,
+           2,
+           10
+          ],
+          "isDefaultRule": false,
+          "isInvisible": false,
+          "protocolId": "084a2855-5d9d-413a-b9b4-40a509cb68a7",
+          "securityType": "zoneFw",
+          "severityInfo": {
+           "name": "ZONEFW_DENY",
+           "severity": 30,
+           "topic": "ZONEFW"
+          },
+          "type": "security check"
+         }
+        ],
+        "phase": "core"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {
+     "ge-0/0/3.0": [
+      "6571!s1xgw2@Et1--6684!d1xfw01@ge-0/0/3.0--#536"
+     ]
+    },
+    "trafficOut": {}
+   }
+  },
+  "eventsSummary": {
+   "flags": [
+    "zone-deny"
+   ],
+   "global": [],
+   "topics": {
+    "ACL": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "FORWARDING": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "NAT44": {
+     "0": 1,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "PBR": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "ZONEFW": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 2
+    }
+   }
+  },
+  "passingTraffic": "none"
+ }
+}

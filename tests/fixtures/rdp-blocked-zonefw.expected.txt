@@ -1,0 +1,31 @@
+== verdict ==
+status: BLOCKED
+details: Blocked [zone-deny]: d1xfw01 [fw] on ge-0/0/3.0 (ports: 3389)
+blocked_at: d1xfw01 [fw]
+rule: zoneFw 'SITE1@CORE' rule=[1, 2, 10] → ZONEFW_DENY
+branches: 1
+
+== destinations ==
+
+== blocked hops ==
+d1xfw01 [fw] drop=Security rules: packet denied.
+    zoneFw 'SITE1@CORE' rule=[1, 2, 10] -> ZONEFW_DENY
+
+== hops ==
+-      host: 172.16.12.0 .. 172.16.12.255 [cloud] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      s1xgw2 [l3switch] in=['Vl112'] out=['Et1'] proto=ip vrf=default blocked=False terminal=False
+-      d1xfw01 [fw] in=['ge-0/0/3.0'] out=None proto=ip vrf=master blocked=True terminal=True
+
+== tree ==
+• host: 172.16.12.0 .. 172.16.12.255 cloud    [- → -]  n/a
+• s1xgw2                             l3switch [Vl112 → Et1]  ip  vrf=default
+• d1xfw01                            fw       [ge-0/0/3.0 → -]  ip  vrf=master  ⛔ BLOCKED
+     🔒 ❌ zoneFw 'SITE1@CORE' rule=[1, 2, 10] → ZONEFW_DENY
+     ✗ Security rules: packet denied.
+
+== tree --l2 ==
+• host: 172.16.12.0 .. 172.16.12.255 cloud    [- → -]  n/a
+• s1xgw2                             l3switch [Vl112 → Et1]  ip  vrf=default
+• d1xfw01                            fw       [ge-0/0/3.0 → -]  ip  vrf=master  ⛔ BLOCKED
+     🔒 ❌ zoneFw 'SITE1@CORE' rule=[1, 2, 10] → ZONEFW_DENY
+     ✗ Security rules: packet denied.

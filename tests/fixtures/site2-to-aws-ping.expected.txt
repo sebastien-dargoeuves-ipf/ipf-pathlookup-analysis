@@ -1,0 +1,100 @@
+== verdict ==
+status: REACHED
+details: Reached 10.2.0.222
+blocked_at: vpn1xfw01 [fw]; vpn1xfw01 [fw]
+rule: acl 'LAN_TO_WAN' rule=[0, 0, 6] → ACL_DENY; acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+branches: 8
+
+== destinations ==
+host: 10.2.0.222 [host] ips=['10.2.0.222'] ports=[]
+
+== blocked hops ==
+vpn1xfw01 [fw] drop=None
+    acl 'LAN_TO_WAN' rule=[0, 0, 6] -> ACL_DENY
+vpn1xfw01 [fw] drop=None
+    acl 'LAN_TO_WAN' rule=[0, 1, 6] -> ACL_DENY
+
+== hops ==
+-      host: 172.16.22.20 [host] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      s2xsw01 [switch] in=['1/1/3'] out=['1/1/1'] proto=l2 vrf=None blocked=False terminal=False
+-      s2xgw1 [l3switch] in=['1/1/2'] out=['1/1/1'] proto=ip vrf=default blocked=False terminal=False
+-      d2xfw01 [fw] in=['ge-0/0/2.0'] out=['ge-0/0/0.0', 'ge-0/0/1.0'] proto=ip vrf=master blocked=False terminal=False
+↳1     d2xr01 [router] in=['Gi0/3'] out=['Gi0/5'] proto=ip vrf= blocked=False terminal=False
+↳2     d2xr01 [router] in=['Gi0/4'] out=['Gi0/5'] proto=ip vrf= blocked=False terminal=False
+-      edge2x01 [router] in=['GigabitEthernet2'] out=['GigabitEthernet3.mpls', 'GigabitEthernet4.public-internet'] proto=mpls vrf=100 blocked=False terminal=False
+↳1     edge1x01 [router] in=['GigabitEthernet4.mpls'] out=['GigabitEthernet3'] proto=mpls vrf=100 blocked=False terminal=False
+↳2     edge1x01 [router] in=['GigabitEthernet5.public-internet'] out=['GigabitEthernet3'] proto=mpls vrf=100 blocked=False terminal=False
+-      d1xr02 [router] in=['Et1/1'] out=['Et0/2'] proto=ip vrf= blocked=False terminal=False
+-      d1xfw01 [fw] in=['ge-0/0/1.0'] out=['ge-0/0/2.0', 'ge-0/0/3.0'] proto=ip vrf=master blocked=False terminal=False
+↳1     s1xgw1 [l3switch] in=['Et1'] out=['Et2'] proto=ip vrf=default blocked=False terminal=False
+↳1     vpn1xfw01 [fw] in=['GigabitEthernet0/1'] out=['GigabitEthernet0/0'] proto=esp vrf= blocked=True terminal=False
+↳2     s1xgw2 [l3switch] in=['Et1'] out=['Et2'] proto=ip vrf=default blocked=False terminal=False
+↳2     vpn1xfw01 [fw] in=['GigabitEthernet0/2'] out=['GigabitEthernet0/0'] proto=esp vrf= blocked=True terminal=False
+-      transit [transit] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      IPF-LAB [awsTgw] in=['vpn-0edbe102d66f932dc/outside/3.74.102.138'] out=['subnet-0688ce44d04efa2f7'] proto=esp vrf=tgw-rtb-0912221debb346727 blocked=False terminal=False
+-      NAE [awsVpc] in=['subnet-0688ce44d04efa2f7'] out=['subnet-06ff93eb663576eff'] proto=n/a vrf=rtb-011c70be5a4c907e9 blocked=False terminal=False
+-      host: 10.2.0.222 [host] in=None out=None proto=n/a vrf=None blocked=False terminal=True
+
+== tree ==
+• host: 172.16.22.20 host     [- → -]  n/a
+• s2xsw01            switch   [1/1/3 → 1/1/1]  l2
+• s2xgw1             l3switch [1/1/2 → 1/1/1]  ip  vrf=default
+• d2xfw01            fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master
+     🔒 ✅ zoneFw 'SITE2@CORE' rule=[1, 0, 1] → ZONEFW_PERMIT (ignored)
+╠═ parallel:
+  • d2xr01             router   [Gi0/3 → Gi0/5]  ip
+  • d2xr01             router   [Gi0/4 → Gi0/5]  ip
+• edge2x01           router   [GigabitEthernet2 → GigabitEthernet3.mpls,GigabitEthernet4.public-internet]  mpls  vrf=100
+╠═ parallel:
+  • edge1x01           router   [GigabitEthernet4.mpls → GigabitEthernet3]  mpls  vrf=100
+  • edge1x01           router   [GigabitEthernet5.public-internet → GigabitEthernet3]  mpls  vrf=100
+• d1xr02             router   [Et1/1 → Et0/2]  ip
+• d1xfw01            fw       [ge-0/0/1.0 → ge-0/0/2.0,ge-0/0/3.0]  ip  vrf=master
+     🔒 ✅ zoneFw 'CORE@SITE1' rule=[1, 0, 1] → ZONEFW_PERMIT (ignored)
+╠═ parallel:
+  • s1xgw1             l3switch [Et1 → Et2]  ip  vrf=default
+  • vpn1xfw01          fw       [GigabitEthernet0/1 → GigabitEthernet0/0]  esp  ⛔ BLOCKED
+       🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 0, 6] → ACL_DENY
+  • s1xgw2             l3switch [Et1 → Et2]  ip  vrf=default
+  • vpn1xfw01          fw       [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED
+       🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+• transit            transit  [- → -]  n/a
+• IPF-LAB            awsTgw   [vpn-0edbe102d66f932dc/outside/3.74.102.138 → subnet-0688ce44d04efa2f7]  esp  
+vrf=tgw-rtb-0912221debb346727
+• NAE                awsVpc   [subnet-0688ce44d04efa2f7 → subnet-06ff93eb663576eff]  n/a  vrf=rtb-011c70be5a4c907e9
+     🔒 ✅ acl 'acl-0b4eac1c13719225e/outbound' rule=[0, 2, 0] → ACL_PERMIT (ignored)
+     🔒 ✅ acl 'acl-0b4eac1c13719225e/inbound' rule=[1, 0, 0] → ACL_PERMIT (ignored)
+     🔒 ✅ acl 'allow_icmp/ingress' rule=[3, 7, 1, 0] → ACL_PERMIT (ignored)
+• host: 10.2.0.222   host     [- → -]  n/a
+
+== tree --l2 ==
+• host: 172.16.22.20 host     [- → -]  n/a
+... l2/fp skipped ...
+• s2xgw1             l3switch [1/1/2 → 1/1/1]  ip  vrf=default
+• d2xfw01            fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master
+     🔒 ✅ zoneFw 'SITE2@CORE' rule=[1, 0, 1] → ZONEFW_PERMIT (ignored)
+╠═ parallel:
+  • d2xr01             router   [Gi0/3 → Gi0/5]  ip
+  • d2xr01             router   [Gi0/4 → Gi0/5]  ip
+• edge2x01           router   [GigabitEthernet2 → GigabitEthernet3.mpls,GigabitEthernet4.public-internet]  mpls  vrf=100
+╠═ parallel:
+  • edge1x01           router   [GigabitEthernet4.mpls → GigabitEthernet3]  mpls  vrf=100
+  • edge1x01           router   [GigabitEthernet5.public-internet → GigabitEthernet3]  mpls  vrf=100
+• d1xr02             router   [Et1/1 → Et0/2]  ip
+• d1xfw01            fw       [ge-0/0/1.0 → ge-0/0/2.0,ge-0/0/3.0]  ip  vrf=master
+     🔒 ✅ zoneFw 'CORE@SITE1' rule=[1, 0, 1] → ZONEFW_PERMIT (ignored)
+╠═ parallel:
+  • s1xgw1             l3switch [Et1 → Et2]  ip  vrf=default
+  • vpn1xfw01          fw       [GigabitEthernet0/1 → GigabitEthernet0/0]  esp  ⛔ BLOCKED
+       🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 0, 6] → ACL_DENY
+  • s1xgw2             l3switch [Et1 → Et2]  ip  vrf=default
+  • vpn1xfw01          fw       [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED
+       🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+• transit            transit  [- → -]  n/a
+• IPF-LAB            awsTgw   [vpn-0edbe102d66f932dc/outside/3.74.102.138 → subnet-0688ce44d04efa2f7]  esp  
+vrf=tgw-rtb-0912221debb346727
+• NAE                awsVpc   [subnet-0688ce44d04efa2f7 → subnet-06ff93eb663576eff]  n/a  vrf=rtb-011c70be5a4c907e9
+     🔒 ✅ acl 'acl-0b4eac1c13719225e/outbound' rule=[0, 2, 0] → ACL_PERMIT (ignored)
+     🔒 ✅ acl 'acl-0b4eac1c13719225e/inbound' rule=[1, 0, 0] → ACL_PERMIT (ignored)
+     🔒 ✅ acl 'allow_icmp/ingress' rule=[3, 7, 1, 0] → ACL_PERMIT (ignored)
+• host: 10.2.0.222   host     [- → -]  n/a

@@ -1,30 +1,52 @@
 """
 # Pathlookup analysis
-Script to display one path in IP Fabric for a given source, destination.
-The output will highlight the security matching
-Option to use a pivot IP is possible.
+
+Two ways in:
+
+- `single` — one flow, rendered as a tree (or a table) with the security verdict.
+  Optionally pivoted through another IP to find where the source is attached.
+- `bulk` — a CSV of flows, each simulated and scored against its stated intent.
+  With `--create-path-verifications`, each row is also pushed into IP Fabric's Path
+  Verifications table, which is the only thing in this repo that writes.
 """
 
+import csv
 import ipaddress
 import json
 import os
 import sys
+import time
+from collections import Counter
 from enum import Enum
+from pathlib import Path
 
 import typer
 from dotenv import find_dotenv, load_dotenv
+from ipfabric.diagrams.output_models import PathLookupResult
 from rich import print
+from rich.markup import escape
 from rich.table import Table
 
+from modules.pathgraph import collapse_l2, enrich, show, show_blocked
 from modules.pathLookup import (
+    build_check_payload,
+    check_exists,
+    create_check,
     create_ipf_client,
     display_all_edges,
-    display_path,
     display_summary_global,
     display_summary_topics,
-    follow_path_first_option,
-    get_json_pathlookup,
+    display_table,
+    get_pathlookup_model,
     get_zonefw_interfaces,
+    unicast_from_row,
+)
+from modules.verdict import (
+    STATUS_MARKER,
+    STATUSES,
+    classify,
+    evaluate_expectation,
+    normalise_expected,
 )
 
 # IPF_ENV_PREFIX = "_DEMO"  # _DEMO / default to env. variables
@@ -50,7 +72,9 @@ class ProtocolChoices(str, Enum):
     icmp = "icmp"
 
 
-app = typer.Typer(add_completion=False, pretty_exceptions_enable=False)
+app = typer.Typer(
+    add_completion=False, pretty_exceptions_enable=False, no_args_is_help=True
+)
 
 
 def validate_option_tcp_udp_callback(
@@ -134,8 +158,32 @@ def validate_ipv4_address(address: str):
         raise typer.BadParameter(error) from error
 
 
+def _client(snapshot_override: str = ""):
+    """Build the IP Fabric client from .env / environment, the one auth story for
+    every command here. Token wins; user/password is the fallback."""
+    load_dotenv(find_dotenv(), override=True)
+    ipf_env_prefix = globals().get("IPF_ENV_PREFIX", "")
+    base_url = os.getenv("".join(["IPF_URL", ipf_env_prefix]))
+    auth = os.getenv("".join(["IPF_TOKEN", ipf_env_prefix])) or (
+        os.getenv("IPF_USERNAME"),
+        os.getenv("IPF_PASSWORD"),
+    )
+    snapshot_id = (
+        snapshot_override
+        or os.getenv("IPF_SNAPSHOT_ID", globals().get("IPF_SNAPSHOT_OVERWRITE", ""))
+        or None
+    )
+    return create_ipf_client(
+        base_url=base_url,
+        auth=auth,
+        snapshot_id=snapshot_id,
+        verify=os.getenv("IPF_VERIFY", IPF_VERIFY_OVERWRITE),
+        timeout=os.getenv("IPF_TIMEOUT", IPF_TIMEOUT_OVERWRITE),
+    )
+
+
 @app.command()
-def main(
+def single(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode."),
     src_ip: str = typer.Option(
         "",
@@ -243,12 +291,6 @@ def main(
     Returns:
     None
     """
-    # Load environment variables
-    load_dotenv(find_dotenv(), override=True)
-    # Create the overwrite as empty if not defined
-    IPF_ENV_PREFIX = locals().get("IPF_ENV_PREFIX", "")
-    IPF_SNAPSHOT_OVERWRITE = locals().get("IPF_SNAPSHOT_OVERWRITE", "")
-    IPF_VERIFY_OVERWRITE = locals().get("IPF_VERIFY_OVERWRITE", "")
     # if we use ICMP, we don't need tcp/udp ports
     if protocol == "icmp":
         src_port = 0
@@ -270,19 +312,8 @@ def main(
         )
 
     if not file:
-        base_url = os.getenv("".join(["IPF_URL", IPF_ENV_PREFIX]))
-        auth = os.getenv("".join(["IPF_TOKEN", IPF_ENV_PREFIX]))
-        snapshot_id = os.getenv("IPF_SNAPSHOT_ID", IPF_SNAPSHOT_OVERWRITE)
-        ipf_verify = os.getenv("IPF_VERIFY", IPF_VERIFY_OVERWRITE)
-        ipf_timeout = os.getenv("IPF_TIMEOUT", IPF_TIMEOUT_OVERWRITE)
-        ipf_client = create_ipf_client(
-            base_url=base_url,
-            auth=auth,
-            snapshot_id=snapshot_id,
-            verify=ipf_verify,
-            timeout=ipf_timeout,
-        )
-        pathlookup_json = get_json_pathlookup(
+        ipf_client = _client()
+        result = get_pathlookup_model(
             ipf_client=ipf_client,
             src_ip=src_ip,
             dst_ip=dst_ip,
@@ -298,41 +329,213 @@ def main(
         zonefw_interfaces = get_zonefw_interfaces(ipf_client)
     else:
         # Using json file to generate the output
-        pathlookup_json = json.load(file)
+        result = PathLookupResult(**json.load(file))
         zonefw_interfaces = None
 
-    pathlookup_edges = pathlookup_json["graphResult"]["graphData"]["edges"]
-    pathlookup_result = pathlookup_json["pathlookup"]
-    pathlookup_decisions = pathlookup_json["pathlookup"]["decisions"]
     # Summary
     print("\n[bold] 1. Event Summary[/bold]")
     # Go through the topics and extract the information
+    pathlookup_result = result.pathlookup.model_dump(by_alias=True)
     display_summary_topics(pathlookup_result)
     display_summary_global(pathlookup_result)
 
-    if not pathlookup_edges.values() and not pivot:
+    # The pivot lookup already ran inside get_pathlookup_model(), so an empty
+    # result here means no path regardless of how the entry point was chosen.
+    if not result.edges:
         print("\n EXIT -> no Path available")
         sys.exit(0)
 
-    print("\n[bold] x. Path Edges[/bold] (explore all nextEdgeId)")
-    path_all_edges = display_all_edges(pathlookup_edges)
+    if verbose:
+        print("\n[bold] x. Path Edges[/bold] (explore all nextEdgeId)")
+        display_all_edges(result.edges)
 
-    # print("\n[bold] 2.1 Generate one Path[/bold] (follow one path Only)")
-    path_first_option = follow_path_first_option(pathlookup_edges)
+    path = enrich(result, zonefw_interfaces)
+    if l2_exclusion:
+        path = collapse_l2(path)
 
-    print("\n[bold] 2. Display Decisions (one path)[/bold]")
-    output_table = Table(title=summary_path_msg) if table_display else None
-    if path_first_option:
-        display_path(
-            path=path_first_option,
-            details=True,
-            pathlookup_decisions=pathlookup_decisions,
-            zonefw_interfaces=zonefw_interfaces,
-            l2_exclusion=l2_exclusion,
-            output_table=output_table,
-        )
+    print("\n[bold] 2. Path[/bold] (all branches)")
+    if table_display:
+        display_table(path, Table(title=summary_path_msg))
     else:
-        print("No Path to display")
+        show(path)
+
+    print("\n[bold] 3. Security verdict[/bold]")
+    show_blocked(result, zonefw_interfaces)
+
+
+WRITE_FIELDS = [
+    "create_status",
+    "exists",
+    "check_id",
+    "job_id",
+    "expectedPassingTraffic",
+]
+
+
+def _create_one(ipf_client, row, out_row, force_create):
+    """Push one row into the Path Verifications table. Fills out_row in place and
+    returns a short status line for the console."""
+    payload = build_check_payload(row)
+    if payload is None:
+        out_row["create_status"] = "SKIPPED"
+        return "SKIPPED (no expected intent)"
+
+    out_row["expectedPassingTraffic"] = payload["expectedPassingTraffic"]
+    exists = bool(check_exists(ipf_client, payload).get("exists"))
+    out_row["exists"] = str(exists).lower()
+    if exists and not force_create:
+        out_row["create_status"] = "SKIPPED"
+        return "SKIPPED existing"
+
+    created = create_check(ipf_client, payload)
+    out_row["create_status"] = "CREATED"
+    out_row["check_id"] = created.get("id", "")
+    out_row["job_id"] = created.get("jobId", "")
+    return f"CREATED id={out_row['check_id']} job={out_row['job_id']}"
+
+
+@app.command()
+def bulk(
+    input_file: Path = typer.Option(
+        ..., "--input", "-i", exists=True, help="Input CSV of flows"
+    ),
+    output_file: Path = typer.Option(
+        "results.csv", "--output", "-o", help="Output CSV path"
+    ),
+    snapshot: str = typer.Option(
+        "", "--snapshot", help="Snapshot ID (default: the one from .env / $last)"
+    ),
+    delay: float = typer.Option(0.2, "--delay", help="Seconds between API calls"),
+    limit: int = typer.Option(0, "--limit", help="Only process the first N rows"),
+    create_path_verifications: bool = typer.Option(
+        False,
+        "--create-path-verifications",
+        help="Also CREATE each flow as a saved path verification in IP Fabric",
+    ),
+    force_create: bool = typer.Option(
+        False,
+        "--force-create",
+        help="Create even when an identical verification already exists",
+    ),
+):
+    """Run every flow in a CSV, and optionally save them as path verifications.
+
+    Input columns: srcIP and dstIP required; srcPort, dstPort, protocol,
+    application, security, expected and comment optional. Any other column is
+    copied through to the output untouched.
+    """
+    if force_create and not create_path_verifications:
+        raise typer.BadParameter(
+            "--force-create only applies with --create-path-verifications"
+        )
+
+    with open(input_file, newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    if limit > 0:
+        rows = rows[:limit]
+    if not rows:
+        print(f"[yellow]No rows in {input_file}[/yellow]")
+        raise typer.Exit(1)
+
+    ipf_client = _client(snapshot)
+    # Once, not per row — it is the same table for every flow.
+    zonefw_interfaces = get_zonefw_interfaces(ipf_client)
+
+    has_expected = "expected" in rows[0]
+    fields = list(rows[0].keys())
+    for field in ["status", "verdict", "blocked_at", "rule", "branches", "details"]:
+        if field == "verdict" and not has_expected:
+            continue
+        if field not in fields:
+            fields.append(field)
+    if create_path_verifications:
+        fields.extend(f for f in WRITE_FIELDS if f not in fields)
+        creatable = sum(
+            1 for r in rows if normalise_expected(r.get("expected")) in
+            ("allow", "block", "part")
+        )
+        print(
+            f"[yellow]⚠ will CREATE path verifications in {ipf_client.base_url} "
+            f"({len(rows)} rows, {creatable} with a usable intent)[/yellow]"
+        )
+
+    results = []
+    for index, row in enumerate(rows, start=1):
+        out_row = dict(row)
+        label = f"{row.get('srcIP', '?')} → {row.get('dstIP', '?')}"
+        print(f"[{index}/{len(rows)}] {label} ...", end=" ")
+
+        try:
+            result = ipf_client.diagram.model(unicast_from_row(row))
+            outcome = classify(result, zonefw_interfaces)
+        except Exception as error:
+            outcome = {
+                "status": "ERROR",
+                "details": str(error),
+                "blocked_at": "",
+                "rule": "",
+                "branches": 0,
+            }
+        out_row.update(outcome)
+
+        verdict = ""
+        if has_expected:
+            verdict = evaluate_expectation(row.get("expected"), outcome["status"])
+            out_row["verdict"] = verdict
+
+        write_note = ""
+        if create_path_verifications:
+            for field in WRITE_FIELDS:
+                out_row.setdefault(field, "")
+            if outcome["status"] == "ERROR":
+                out_row["create_status"] = "SKIPPED"
+                write_note = "  SKIPPED (row failed)"
+            else:
+                try:
+                    write_note = "  " + _create_one(
+                        ipf_client, row, out_row, force_create
+                    )
+                except Exception as error:
+                    out_row["create_status"] = "ERROR"
+                    write_note = f"  CREATE ERROR {error}"
+
+        results.append(out_row)
+        marker = STATUS_MARKER.get(outcome["status"], "?")
+        tag = f"[{verdict}] " if verdict else ""
+        detail = outcome["details"]
+        # escape(): details are full of '[zone-deny]' / '[fw]', which rich would
+        # swallow as style markup — the CSV kept them, the console silently did not.
+        print(
+            escape(
+                f"{marker} {outcome['status']:<8} {tag}"
+                f"{detail[:90]}{'…' if len(detail) > 90 else ''}{write_note}"
+            )
+        )
+        if index < len(rows):
+            time.sleep(delay)
+
+    with open(output_file, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(results)
+
+    counts = Counter(r["status"] for r in results)
+    summary = "  ".join(f"{s}: {counts[s]}" for s in STATUSES if counts.get(s))
+    line = f"\n→ {output_file}   {summary or 'no results'}"
+    if has_expected:
+        seen = Counter(r.get("verdict", "") for r in results)
+        checks = "  ".join(
+            f"{v}: {seen[v]}"
+            for v in ("MATCH", "MISMATCH", "ASSESS", "?", "n/a")
+            if seen.get(v)
+        )
+        line += f"   |  checks → {checks}" if checks else ""
+    if create_path_verifications:
+        made = Counter(r.get("create_status", "") for r in results)
+        line += "   |  verifications → " + "  ".join(
+            f"{k}: {v}" for k, v in made.items() if k
+        )
+    print(line)
 
 
 if __name__ == "__main__":

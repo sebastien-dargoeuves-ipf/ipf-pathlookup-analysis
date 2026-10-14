@@ -1,0 +1,41 @@
+== devices: workshop-day1 ==
+['c0xr01', 'c0xr02', 'c0xr03', 'c0xr04', 'c0xr05', 'c0xr06', 'd1xfw01', 'd1xr01', 'd3xfw01', 'd3xr01', 'lb3x02', 's1xgw1', 's1xsw01', 's1xsw03', 's1xsw04', 's1xsw05', 's3xgw1', 's3xlbr01', 's3xlbsw01']
+
+== devices: workshop-day4 ==
+['d1xfw01', 'd1xr01', 'd1xr02', 'd3xfw02', 'd3xr02', 'edge1x01', 'edge3x01', 'lb3x02', 's1xgw1', 's1xsw01', 's1xsw03', 's1xsw05', 's3xgw2', 's3xlbr01', 's3xlbsw01']
+
+== diff_paths(workshop-day1, workshop-day4) ==
+,workshop-day1,workshop-day1 state,workshop-day4,workshop-day4 state
+=,host: 172.16.11.60 (host)  [· → ·],✓,host: 172.16.11.60 (host)  [· → ·],✓
+=,s1xsw05 (switch)  [Et1/0 → Et0/1],✓,s1xsw05 (switch)  [Et1/0 → Et0/1],✓
+≠,s1xsw03 (switch)  [Et1/3 → Et1/1],✓,s1xsw03 (switch)  [Et1/3 → Et0/1],✓
+−,s1xsw04 (switch)  [Et0/3 → Et0/1],✓,,
+=,s1xsw01 (switch)  [Et1/1 → Et0/1],✓,s1xsw01 (switch)  [Et1/0 → Et0/1],✓
+=,s1xgw1 (l3switch)  [Et7 → Et1],✓,s1xgw1 (l3switch)  [Et7 → Et1],✓
+≠,d1xfw01 (fw)  [ge-0/0/2.0 → ge-0/0/0.0],✅ SITE1@CORE → ZONEFW_PERMIT,"d1xfw01 (fw)  [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]",✅ SITE1@CORE → ZONEFW_PERMIT
+≠,d1xr01 (router)  [Et0/2 → Et0/1],✓,d1xr01 (router)  [Et0/2 → Et1/1],✓
+−,c0xr02 (router)  [ge-0/0/2.0 → ge-0/0/0.0],✓,,
+−,c0xr01 (router)  [ge-0/0/0.0 → ge-0/0/1.0],✓,,
+−,c0xr06 (router)  [ge-0/0/1.0 → ge-0/0/0.0],✓,,
+−,c0xr05 (router)  [ge-0/0/1.0 → ge-0/0/0.0],✓,,
+−,c0xr04 (router)  [ge-0/0/1.0 → ge-0/0/0.0],✓,,
+−,c0xr03 (router)  [ge-0/0/1.0 → ge-0/0/3.0],✓,,
+−,d3xr01 (router)  [Gi0/1 → Gi0/2],✓,,
+−,d3xfw01 (fw)  [port2 → port3],✅ port2->port3 → ZONEFW_PERMIT,,
+−,s3xgw1 (l3switch)  [Et1 → Et7],✓,,
++,,,"edge1x01 (router)  [GigabitEthernet2 → GigabitEthernet4.mpls,GigabitEthernet5.public-internet]",✓
++,,,edge3x01 (router)  [GigabitEthernet4.mpls → GigabitEthernet3],✓
++,,,edge3x01 (router)  [GigabitEthernet5.public-internet → GigabitEthernet3],✓
++,,,d1xr02 (router)  [Et0/2 → Et1/1],✓
++,,,"edge1x01 (router)  [GigabitEthernet3 → GigabitEthernet4.mpls,GigabitEthernet5.public-internet]",✓
++,,,edge3x01 (router)  [GigabitEthernet4.mpls → GigabitEthernet3],✓
++,,,edge3x01 (router)  [GigabitEthernet5.public-internet → GigabitEthernet3],✓
++,,,d3xr02 (router)  [Gi0/4 → Gi0/2],✓
++,,,d3xfw02 (fw)  [port2 → port3],✅ port2->port3 → ZONEFW_PERMIT
++,,,s3xgw2 (l3switch)  [Et1 → Et7],✓
+=,s3xlbr01 (router)  [Et1 → Et4],✓,s3xlbr01 (router)  [Et2 → Et4],✓
+=,lb3x02 (lb)  [Vl1 → Vl200],✓,lb3x02 (lb)  [Vl1 → Vl200],✓
+=,"s3xlbsw01 (switch)  [Et2 → Et3,Et5,Vl331]",✓,"s3xlbsw01 (switch)  [Et2 → Et3,Et5,Vl331]",✓
+=,host: 172.16.31.60 (host)  [· → ·],✓,host: 172.16.31.60 (host)  [· → ·],✓
+=,host: 172.16.31.61 172.16.31.63 (cloud)  [· → ·],✓,host: 172.16.31.61 172.16.31.63 (cloud)  [· → ·],✓
+=,host: 172.16.31.62 (host)  [· → ·],✓,host: 172.16.31.62 (host)  [· → ·],✓

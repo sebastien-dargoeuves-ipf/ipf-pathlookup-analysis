@@ -37,3 +37,10 @@ env/
 # User-specific files
 *.swp
 .DS_Store
+# Local scratch script (may hold snapshot ids / live targets)
+test_new_pathtool.py
+
+# Bulk run output — real flows against a real instance, not for committing.
+# flows_sample.csv / results_sample.csv are the committed examples.
+results.csv
+path_checks_results.csv
