@@ -25,7 +25,6 @@ from dotenv import find_dotenv, load_dotenv
 from ipfabric.diagrams.output_models import PathLookupResult
 from rich import print
 from rich.markup import escape
-from rich.table import Table
 
 from modules.checks import build_check_payload, check_exists, create_check
 from modules.display import (
@@ -244,6 +243,12 @@ def single(
     table_display: bool = typer.Option(
         False, "--table", "-t", help="Display result in a table format"
     ),
+    first_path: bool = typer.Option(
+        False,
+        "--first-path",
+        "-fp",
+        help="Follow one branch at each fork (the first that reaches the destination) in the path view",
+    ),
     file: typer.FileText = typer.Option(
         None,
         "--file",
@@ -269,6 +274,7 @@ def single(
     auto_pivot (bool): retry via the reverse path when the source has no default gateway
     pivot (str): to use to perform two PathLookup, first to identify where the source is connected
     table (bool): display the output as a table
+    first_path (bool): in the table, follow one branch at each fork
     file (FileText): The JSON file containing Pathlookup output (optional).
 
     Returns:
@@ -289,7 +295,6 @@ def single(
     if verbose:
         print(f"[italic]Debug: ttl:{ttl}, fragment offset:{fragment_offset}\n")
     if pivot:
-        summary_path_msg += f" | Pivot: `{pivot}`"
         print(
             f"Using pivot IP `{pivot}` to find where the source IP `{src_ip}` is connected\n"
         )
@@ -344,11 +349,12 @@ def single(
     if l2_exclusion:
         path = collapse_l2(path)
 
-    print("\n[bold] 2. Path[/bold] (all branches)")
+    scope = "first path only" if first_path else "all branches"
+    print(f"\n[bold] 2. Path[/bold] ({scope})")
     if table_display:
-        display_table(path, Table(title=summary_path_msg))
+        display_table(path, first_path=first_path)
     else:
-        show(path)
+        show(path, first_path=first_path)
 
     print("\n[bold] 3. Security verdict[/bold]")
     show_blocked(result, zonefw_interfaces)

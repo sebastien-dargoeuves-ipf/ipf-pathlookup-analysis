@@ -78,7 +78,8 @@ The available options:
 - --l2_exclusion or -l2: Remove L2 from the displayed path.
 - --pivot or -pivot: Enter the Pivot IPv4 address.
 - --auto-pivot: If the source has `DEFAULT_GW_NOT_FOUND`, reverse source and destination, find where that path leaves to the transit, and re-run from that device and interface (opt-in).
-- --table or -t: Display result in a table format (see the `Br` column below).
+- --table or -t: Display result in a table format (see *The table* below).
+- --first-path or -fp: Follow one branch at each fork (tree and table).
 - --verbose or -v: Enable verbose mode, and add the raw edge dump (section `x`).
 - --file or -f: JSON file containing Pathlookup output \*testing purposes only\*
 
@@ -181,7 +182,8 @@ you meant to deny is getting through.
 
 Three sections: the event summary, the path itself, and the security verdict.
 The path is printed as a tree — where the traffic forks (ECMP, redundant firewall
-legs, a load-balancer hairpin) **every** leg is shown, under a `╠═ parallel:` header:
+legs, a load-balancer hairpin) **every** leg is shown as a labelled branch, and `⑃ rejoin`
+marks where they merge again. `--first-path` (`-fp`) shows one branch per fork instead:
 
 ```text
  2. Path (all branches)
@@ -190,57 +192,61 @@ legs, a load-balancer hairpin) **every** leg is shown, under a `╠═ parallel:
 • s2xgw1             l3switch [1/1/2 → 1/1/1]  ip  vrf=default
 • d2xfw01            fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master  zone=CORE
      🔒 ✅ zoneFw 'SITE2@CORE' rule=[1, 0, 0] → ZONEFW_PERMIT (ignored)
-╠═ parallel:
-  • d2xr01             router   [Gi0/3 → Gi0/5]  ip
-  • d2xr01             router   [Gi0/4 → Gi0/5]  ip
+⑂ 2 branches
+├─ branch 1/2
+│  • d2xr01             router   [Gi0/3 → Gi0/5]  ip
+└─ branch 2/2
+   • d2xr01             router   [Gi0/4 → Gi0/5]  ip
+⑃ rejoin
 ...
 • lb3x02             lb       [Vl1 → Vl100]  ip  vrf=0
 ...
 • d3xfw02            fw       [port3 → port2]  ip  zone=any  ⛔ BLOCKED
      🔒 ❌ zoneFw 'main' rule=[0, 2] → ZONEFW_DENY
 ...
-╠═ parallel:
-  • s4xlf03            l3switch [Et1 → Et5]  vxlan  vrf=s4tenant
-  • host: 172.16.42.60 host     [- → -]  n/a
-  • s4xlf05            l3switch [Et2 → Et5]  vxlan  vrf=s4tenant
-  • host: 172.16.42.61 host     [- → -]  n/a
+⑂ 2 branches
+├─ branch 1/2
+│  • s4xlf03            l3switch [Et1 → Et5]  vxlan  vrf=s4tenant
+│  • host: 172.16.42.60 host     [- → -]  n/a
+└─ branch 2/2
+   • s4xlf05            l3switch [Et2 → Et5]  vxlan  vrf=s4tenant
+   • host: 172.16.42.61 host     [- → -]  n/a
 
  3. Security verdict
 ⛔ Traffic blocked at d3xfw02 (fw)
      rule: zoneFw policy 'main'  rule=[0, 2]  → ZONEFW_DENY
 ```
 
-### The `Br` column (`--table`)
+### The table (`--table`)
 
-`--table` flattens the same data into rows. Because flattening loses the tree shape,
-each row carries a `Br` marker saying which leg it is on. Read it as an address, not
-a count: **blank means trunk** (every packet passes through), and each `↳N` is a turn
-taken at successive forks, stacking left to right.
+`--table` flattens the path into one numbered row per hop (`#`). Flattening loses the
+tree shape, so forks and merges get a note row instead of a marker column:
 
 ```text
-d4xfw01  egress eth3,eth4          ← fork #1, on the trunk (blank Br)
-├─ ↳1  s4xlf01   egress Et2,Et3    ← took eth3; this leg forks again
-│   ├─ ↳1↳1  s4xsp01 → s4xlf03 → host .60
-│   └─ ↳1↳2  s4xsp02 → s4xlf05 → host .61
-└─ ↳2  s4xlf02   egress Et2,Et3    ← took eth4; same
-    ├─ ↳2↳1  s4xsp01 → s4xlf03 → host .60
-    └─ ↳2↳2  s4xsp02 → s4xlf05 → host .61
+6   ge-0/0/2.0  d1xfw01      ge-0/0/0.0,ge-0/0/1.0  ip  master  OK SITE1@CORE
+                ⑂ 2 branches
+                  branch 1/2
+7   Et0/2         d1xr01     Et1/1                  ip
+...
+                  branch 2/2
+12  Et0/2         d1xr02     Et1/1                  ip
+...
+                ⑃ rejoin
+15  Gi0/4       d3xr02       Gi0/2                  ip
 ```
 
-So `↳1↳2` = "first leg of the outer fork, then second leg of the fork inside it".
+- Hops inside a fork are indented under their `branch n/N` note; nested forks indent
+  further.
+- `⑃ rejoin` means the path continues past the fork, so everything below is shared.
+  A fork at the very end (e.g. several destination hosts) has no rejoin.
+- Columns that are empty for the whole path (VRF, Security) are left out.
 
-- **Prefix = parent.** `↳1↳1` rows sit *underneath* the `↳1` row, not beside it.
-- **To read one end-to-end path**, take every blank row plus every row whose marker is
-  a prefix of your chosen leaf: path to `.60` via `s4xlf01` = trunk + `↳1` + `↳1↳1`.
-- **Leaf markers = distinct paths.** Four above, which is why `.60` and `.61` each
-  appear twice — both leaf switches reach both spines.
+`--first-path` (`-fp`) works the same way in the tree: it follows one branch at each fork instead of all of them: the
+first branch that reaches the destination, else the first. The fork note says how many
+branches were left out (`⑂ 3 branches, showing branch 1`). The security verdict below
+the table still covers all branches, so a blocked leg is not hidden by the shorter view.
 
-Legs that **rejoin** put everything past the merge point back on the trunk, so a
-shared tail is rendered once, not once per leg. The merge point is the nearest edge
-every packet must cross (the immediate post-dominator) — a common descendant is not
-enough, since a packet takes only one branch of a downstream fork.
-
-The `Sec` column shows the deciding verdict as a coloured word — `OK`, `INFO`, `WARN`,
+The `Security` column shows the deciding verdict as a coloured word — `OK`, `INFO`, `WARN`,
 `BLOCK` — rather than the emoji used in the tree. Emoji are double-width in most
 terminals but rich measures some of them as one cell, which shifts every column border
 below them.

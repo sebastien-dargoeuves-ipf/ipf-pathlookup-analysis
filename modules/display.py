@@ -9,7 +9,7 @@ from rich import print
 from rich.markup import escape
 from rich.table import Table
 
-from .pathgraph import flat_rows
+from .pathgraph import note_text, path_rows
 from .utilis import SEVERITY_TEXT, display_severity
 
 GREEN = "0"
@@ -158,49 +158,68 @@ def display_all_edges(pathlookup_edges: dict):
     return final_all_edges
 
 
-def display_table(structure, output_table: Table):
+def display_table(structure, first_path: bool = False):
     """
-    Render the enriched path as a flat table. Forks are flattened, with a Branch
-    column marking which leg (↳1, ↳2, …) each hop belongs to so ECMP is not lost.
+    Render the enriched path as a table, one row per hop. Forks and rejoins get a
+    note row (see pathgraph.path_rows) and branch hops are indented under it.
+    Columns that would be empty for the whole path are left out.
 
     Parameters:
     structure: pathgraph.enrich() output
-    output_table (Table): the rich Table to populate
+    first_path (bool): follow one branch at each fork instead of all of them
 
     Returns:
     None
     """
-    for column, style in (
-        ("Br", "dim"),
-        ("Ingress", None),
-        ("Device", "cyan"),
-        ("Egress", None),
-        ("Protocol", "green"),
-        ("VRF", None),
-        ("Sec", None),
-        ("Rule Chain", None),
-        ("ZoneFW", None),
-    ):
-        output_table.add_column(column, style=style, no_wrap=(column == "Device"))
-
-    for branch, hop in flat_rows(structure):
-        security = rule_chain = ""
-        if hop["blocked"]:
-            security, rule_chain = SEVERITY_TEXT[30], hop["drop_reason"] or ""
-        if hop["security"]:
-            top = hop["security"][0]
-            security = display_severity(top["severity"], text=True)
-            rule_chain = top["policy"] or ""
+    columns = ["#", "Ingress", "Device", "Egress", "Protocol", "VRF", "Security"]
+    rows, hop_number = [], 0
+    for depth, hop in path_rows(structure, first_only=first_path):
+        if isinstance(hop, tuple):
+            rows.append(("note", "  " * depth + note_text(hop)))
+            continue
+        hop_number += 1
         vrf = hop["vrf"] if isinstance(hop["vrf"], str) else ",".join(hop["vrf"] or [])
-        output_table.add_row(
-            branch,
-            ",".join(hop["ingress"] or ["-"]),
-            hop["device"],
-            ",".join(hop["egress"] or ["-"]),
-            hop["protocol"],
-            vrf,
-            security,
-            rule_chain,
-            hop["zonefw"] or "",
+        rows.append(
+            (
+                "hop",
+                [
+                    str(hop_number),
+                    ",".join(hop["ingress"] or ["-"]),
+                    "  " * depth + hop["device"],
+                    ",".join(hop["egress"] or ["-"]),
+                    hop["protocol"],
+                    vrf,
+                    _security_text(hop),
+                ],
+            )
         )
-    print(output_table)
+
+    hops = [cells for kind, cells in rows if kind == "hop"]
+    keep = [i for i in range(len(columns)) if i < 4 or any(c[i] for c in hops)]
+    table = Table(box=None, pad_edge=False)
+    for i in keep:
+        table.add_column(
+            columns[i],
+            style={0: "dim", 2: "cyan", 4: "green"}.get(i),
+            no_wrap=(i == 2),
+        )
+    for kind, cells in rows:
+        if kind == "note":
+            table.add_row(*([""] * (keep.index(2))), f"[dim]{escape(cells)}[/dim]")
+        else:
+            # The security cell is already rich markup (coloured severity), escaped inside.
+            table.add_row(*(cells[i] if i == 6 else escape(cells[i]) for i in keep))
+    print(table)
+
+
+def _security_text(hop) -> str:
+    """One cell (rich markup) for the security verdict, the deciding policy and the zone."""
+    text = ""
+    if hop["blocked"]:
+        text = f"{SEVERITY_TEXT[30]} {escape(hop['drop_reason'] or '')}".strip()
+    if hop["security"]:
+        top = hop["security"][0]
+        text = f"{display_severity(top['severity'], text=True)} {escape(top['policy'] or '')}".strip()
+    if hop["zonefw"]:
+        text = f"{text} (zone {escape(str(hop['zonefw']))})".strip()
+    return text

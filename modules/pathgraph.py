@@ -431,6 +431,47 @@ def flat_rows(structure, branch=""):
             yield branch, item
 
 
+def path_rows(structure, first_only=False, depth=0):
+    """Rows for the table and tree views: yields (depth, hop) for a hop, and
+    (depth, note) for a fork / branch / rejoin note (a tuple, see note_text()), so the
+    structure survives flattening.
+
+    first_only follows ONE branch at each fork: the first that reaches a destination,
+    else the first. The fork note says which one, out of how many."""
+    for position, item in enumerate(structure):
+        if not isinstance(item, list):
+            yield depth, item
+            continue
+        count = len(item)
+        if first_only:
+            chosen = next((i for i, br in enumerate(item) if destinations(br)), 0)
+            if count > 1:
+                yield depth, ("fork", count, chosen + 1)
+            yield from path_rows(item[chosen], first_only, depth)
+            continue
+        if count > 1:
+            yield depth, ("fork", count, None)
+        for number, branch in enumerate(item, 1):
+            if count > 1:
+                yield depth + 1, ("branch", number, count)
+            yield from path_rows(branch, first_only, depth + (count > 1))
+        # Only a fork that the path continues past rejoins; one at the very end just
+        # has each branch finish on its own.
+        if count > 1 and position < len(structure) - 1:
+            yield depth, ("rejoin",)
+
+
+def note_text(note):
+    """The words for a path_rows() note."""
+    kind = note[0]
+    if kind == "fork":
+        _, count, shown = note
+        return f"⑂ {count} branches" + (f", showing branch {shown}" if shown else "")
+    if kind == "branch":
+        return f"branch {note[1]}/{note[2]}"
+    return "⑃ rejoin"
+
+
 def destinations(structure):
     """Terminal hops — where traffic was accepted and forwarded no further.
 
@@ -520,19 +561,28 @@ def _widths(structure):
     )
 
 
-def show(structure, indent=0, widths=None):
+def show(structure, first_path=False):
     """Print the enriched path as a tree: one line per hop, forks as labelled
-    parallel branches, security/drop detail indented underneath."""
-    if widths is None:
-        widths = _widths(structure)
-    wd, wt = widths
-    pad = "  " * indent
-    for hop in structure:
-        if isinstance(hop, list):
-            print(f"{pad}[dim]╠═ parallel:[/dim]")
-            for br in hop:
-                show(br, indent + 1, widths)
+    branches (├─ / └─), security/drop detail indented underneath. `first_path`
+    follows one branch per fork (see path_rows)."""
+    wd, wt = _widths(structure)
+    # last[level]: is the branch currently open at that nesting level the final one?
+    # It decides whether the guide line continues (│) or stops (blank) beside it.
+    last = {}
+
+    def guide(levels):
+        return "".join("   " if last[level] else "│  " for level in range(1, levels + 1))
+
+    for depth, hop in path_rows(structure, first_only=first_path):
+        if isinstance(hop, tuple):
+            if hop[0] == "branch":
+                last[depth] = hop[1] == hop[2]
+                corner = "└─ " if last[depth] else "├─ "
+                print(f"[dim]{guide(depth - 1)}{corner}{note_text(hop)}[/dim]")
+            else:
+                print(f"[dim]{guide(depth)}{note_text(hop)}[/dim]")
             continue
+        pad = guide(depth)
         if hop is _L2_SKIP:
             print(f"{pad}[dim]{hop['device']}[/dim]")
             continue
@@ -543,7 +593,11 @@ def show(structure, indent=0, widths=None):
             extra += f"  vrf={vrf}"
         if hop["zonefw"]:
             extra += f"  zone={hop['zonefw']}"
-        flag = "  [red]⛔ BLOCKED[/red]" if hop["blocked"] else ""
+        flag = ""
+        if hop["blocked"]:
+            # Not terminal = the lookup ran with Security: Continue, past the deny.
+            more = "" if hop["terminal"] else " (path continues)"
+            flag = f"  [red]⛔ BLOCKED{more}[/red]"
         print(
             f"{pad}• [cyan]{hop['device']:<{wd}}[/cyan] "
             f"[dim]{hop['type']:<{wt}}[/dim] {escape(io)}[green]{escape(extra)}[/green]{flag}"
