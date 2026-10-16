@@ -27,21 +27,22 @@ from rich import print
 from rich.markup import escape
 from rich.table import Table
 
-from modules.pathgraph import collapse_l2, enrich, show, show_blocked
-from modules.pathLookup import (
-    build_check_payload,
-    check_exists,
-    create_check,
-    create_ipf_client,
+from modules.checks import build_check_payload, check_exists, create_check
+from modules.display import (
     display_all_edges,
     display_summary_global,
     display_summary_topics,
     display_table,
-    get_pathlookup_model,
-    get_zonefw_interfaces,
-    model_row_auto_pivot,
-    unicast_from_row,
+    show_pivot,
 )
+from modules.lookup import (
+    create_ipf_client,
+    flow_from_row,
+    get_zonefw_interfaces,
+    pivot_note,
+    run_lookup,
+)
+from modules.pathgraph import collapse_l2, enrich, show, show_blocked
 from modules.verdict import (
     STATUS_MARKER,
     STATUSES,
@@ -117,46 +118,21 @@ def validate_range_callback(value: int, min_value: int, max_value: int):
     return value
 
 
-def validate_ipv4_address_or_empty(address: str):
-    """
-    Validate that a string is a valid IPv4 address or subnet.
-
-    Parameters:
-    address (str): The string to validate.
-
-    Returns:
-    str: The validated IPv4 address or subnet.
-
-    Raises:
-    BadParameter: If the string is not a valid IPv4 address or subnet.
-    """
-    if not address:
-        return None
-    try:
-        if ipaddress.IPv4Network(address):
-            return address
-    except Exception as error:
-        raise typer.BadParameter(error) from error
-
-
 def validate_ipv4_address(address: str):
     """
-    Validate that a string is a valid IPv4 address or subnet.
-
-    Parameters:
-    address (str): The string to validate.
-
-    Returns:
-    str: The validated IPv4 address or subnet.
-
-    Raises:
-    BadParameter: If the string is not a valid IPv4 address or subnet.
+    Validate that a string is a valid IPv4 address or subnet; returns it unchanged.
+    Raises BadParameter otherwise (an empty string included: src/dst are required).
     """
     try:
-        if ipaddress.IPv4Network(address):
-            return address
-    except Exception as error:
+        ipaddress.IPv4Network(address)
+    except ValueError as error:
         raise typer.BadParameter(error) from error
+    return address
+
+
+def validate_ipv4_address_or_empty(address: str):
+    """Same, for an optional option: empty means not given."""
+    return validate_ipv4_address(address) if address else None
 
 
 def _client(snapshot_override: str = ""):
@@ -320,20 +296,27 @@ def single(
 
     if not file:
         ipf_client = _client()
-        result = get_pathlookup_model(
-            ipf_client=ipf_client,
-            src_ip=src_ip,
-            dst_ip=dst_ip,
-            protocol=protocol,
-            src_port=src_port,
-            dst_port=dst_port,
-            ttl=ttl,
-            source_vrf=source_vrf,
-            fragment_offset=fragment_offset,
-            secured_path=secured_path,
-            pivot=pivot,
-            auto_pivot=auto_pivot,
+        flow = {
+            "src_ip": src_ip,
+            "dst_ip": dst_ip,
+            "protocol": protocol,
+            "src_port": src_port,
+            "dst_port": dst_port,
+            "ttl": ttl,
+            "fragment_offset": fragment_offset,
+            "secured_path": secured_path,
+            "first_hop_algorithm": (
+                {"type": "automatic", "vrf": source_vrf}
+                if source_vrf
+                else {"type": "automatic"}
+            ),
+        }
+        lookup = run_lookup(
+            ipf_client.diagram, flow, pivot=pivot, auto_pivot=auto_pivot
         )
+        if lookup.pivot:
+            show_pivot(lookup.pivot, src_ip)
+        result = lookup.result
         zonefw_interfaces = get_zonefw_interfaces(ipf_client)
     else:
         # Using json file to generate the output
@@ -347,7 +330,7 @@ def single(
     display_summary_topics(pathlookup_result)
     display_summary_global(pathlookup_result)
 
-    # The pivot lookup already ran inside get_pathlookup_model(), so an empty
+    # Any pivot already ran inside run_lookup(), so an empty
     # result here means no path regardless of how the entry point was chosen.
     if not result.edges:
         print("\n EXIT -> no Path available")
@@ -442,61 +425,26 @@ def bulk(
             "--force-create only applies with --create-path-verifications"
         )
 
-    with open(input_file, newline="", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
-    if limit > 0:
-        rows = rows[:limit]
-    if not rows:
-        print(f"[yellow]No rows in {input_file}[/yellow]")
-        raise typer.Exit(1)
-
+    rows = _read_rows(input_file, limit)
     ipf_client = _client(snapshot)
     # Once, not per row — it is the same table for every flow.
     zonefw_interfaces = get_zonefw_interfaces(ipf_client)
 
     has_expected = "expected" in rows[0]
-    fields = list(rows[0].keys())
-    for field in ["status", "verdict", "blocked_at", "rule", "branches", "details", "auto_pivot"]:
-        if field == "verdict" and not has_expected:
-            continue
-        if field == "auto_pivot" and not auto_pivot:
-            continue
-        if field not in fields:
-            fields.append(field)
+    fields = _output_fields(rows, has_expected, auto_pivot, create_path_verifications)
     if create_path_verifications:
-        fields.extend(f for f in WRITE_FIELDS if f not in fields)
-        creatable = sum(
-            1 for r in rows if normalise_expected(r.get("expected")) in
-            ("allow", "block", "part")
-        )
-        print(
-            f"[yellow]⚠ will CREATE path verifications in {ipf_client.base_url} "
-            f"({len(rows)} rows, {creatable} with a usable intent)[/yellow]"
-        )
+        _warn_creating(ipf_client, rows)
 
     results = []
     for index, row in enumerate(rows, start=1):
-        out_row = dict(row)
         label = f"{row.get('srcIP', '?')} → {row.get('dstIP', '?')}"
         print(f"[{index}/{len(rows)}] {label} ...", end=" ")
 
-        pivoted = ""
-        try:
-            if auto_pivot:
-                result, pivoted = model_row_auto_pivot(ipf_client, row)
-                out_row["auto_pivot"] = pivoted
-            else:
-                result = ipf_client.diagram.model(unicast_from_row(row))
-            outcome = classify(result, zonefw_interfaces)
-        except Exception as error:
-            outcome = {
-                "status": "ERROR",
-                "details": str(error),
-                "blocked_at": "",
-                "rule": "",
-                "branches": 0,
-            }
+        out_row = dict(row)
+        outcome, pivoted = _score_row(ipf_client, row, zonefw_interfaces, auto_pivot)
         out_row.update(outcome)
+        if auto_pivot:
+            out_row["auto_pivot"] = pivoted
 
         verdict = ""
         if has_expected:
@@ -505,41 +453,116 @@ def bulk(
 
         write_note = ""
         if create_path_verifications:
-            for field in WRITE_FIELDS:
-                out_row.setdefault(field, "")
-            if outcome["status"] == "ERROR":
-                out_row["create_status"] = "SKIPPED"
-                write_note = "  SKIPPED (row failed)"
-            else:
-                try:
-                    write_note = "  " + _create_one(
-                        ipf_client, row, out_row, force_create
-                    )
-                except Exception as error:
-                    out_row["create_status"] = "ERROR"
-                    write_note = f"  CREATE ERROR {error}"
+            write_note = _create_row(
+                ipf_client, row, out_row, outcome["status"], force_create
+            )
 
         results.append(out_row)
-        marker = STATUS_MARKER.get(outcome["status"], "?")
-        tag = f"[{verdict}] " if verdict else ""
-        detail = outcome["details"]
-        # escape(): details are full of '[zone-deny]' / '[fw]', which rich would
-        # swallow as style markup — the CSV kept them, the console silently did not.
-        print(
-            escape(
-                f"{marker} {outcome['status']:<8} {tag}"
-                f"{detail[:90]}{'…' if len(detail) > 90 else ''}{write_note}"
-                f"{f'  [auto-pivot {pivoted}]' if pivoted else ''}"
-            )
-        )
+        _print_row_result(outcome, verdict, write_note, pivoted)
         if index < len(rows):
             time.sleep(delay)
 
+    _write_csv(output_file, fields, results)
+    print(_summary_line(output_file, results, has_expected, create_path_verifications))
+
+
+def _read_rows(input_file: Path, limit: int) -> list[dict]:
+    """The CSV rows to run (first `limit` if set). Exits if there are none."""
+    with open(input_file, newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    if limit > 0:
+        rows = rows[:limit]
+    if not rows:
+        print(f"[yellow]No rows in {input_file}[/yellow]")
+        raise typer.Exit(1)
+    return rows
+
+
+def _output_fields(rows, has_expected, auto_pivot, create_path_verifications):
+    """Output columns: the input ones, then the result ones that apply to this run."""
+    fields = list(rows[0].keys())
+    added = ["status", "verdict", "blocked_at", "rule", "branches", "details"]
+    if not has_expected:
+        added.remove("verdict")
+    if auto_pivot:
+        added.append("auto_pivot")
+    if create_path_verifications:
+        added.extend(WRITE_FIELDS)
+    fields.extend(f for f in added if f not in fields)
+    return fields
+
+
+def _warn_creating(ipf_client, rows):
+    """Say loudly, before anything runs, that this run writes to IP Fabric."""
+    creatable = sum(
+        1
+        for r in rows
+        if normalise_expected(r.get("expected")) in ("allow", "block", "part")
+    )
+    print(
+        f"[yellow]⚠ will CREATE path verifications in {ipf_client.base_url} "
+        f"({len(rows)} rows, {creatable} with a usable intent)[/yellow]"
+    )
+
+
+def _score_row(ipf_client, row, zonefw_interfaces, auto_pivot):
+    """Run one row. Returns (outcome, pivot note). A bad row or a failed lookup
+    becomes an ERROR outcome rather than aborting the whole file."""
+    try:
+        lookup = run_lookup(
+            ipf_client.diagram, flow_from_row(row), auto_pivot=auto_pivot
+        )
+        return classify(lookup.result, zonefw_interfaces), pivot_note(lookup.pivot)
+    except Exception as error:
+        outcome = {
+            "status": "ERROR",
+            "details": str(error),
+            "blocked_at": "",
+            "rule": "",
+            "branches": 0,
+        }
+        return outcome, ""
+
+
+def _create_row(ipf_client, row, out_row, status, force_create):
+    """Create the saved verification for a row that ran; returns the console note."""
+    for field in WRITE_FIELDS:
+        out_row.setdefault(field, "")
+    if status == "ERROR":
+        out_row["create_status"] = "SKIPPED"
+        return "  SKIPPED (row failed)"
+    try:
+        return "  " + _create_one(ipf_client, row, out_row, force_create)
+    except Exception as error:
+        out_row["create_status"] = "ERROR"
+        return f"  CREATE ERROR {error}"
+
+
+def _print_row_result(outcome, verdict, write_note, pivoted):
+    """Finish the `[i/n] src → dst ...` console line."""
+    marker = STATUS_MARKER.get(outcome["status"], "?")
+    tag = f"[{verdict}] " if verdict else ""
+    detail = outcome["details"]
+    pivot_tag = f"  [auto-pivot {pivoted}]" if pivoted else ""
+    # escape(): details are full of '[zone-deny]' / '[fw]', which rich would
+    # swallow as style markup — the CSV kept them, the console silently did not.
+    print(
+        escape(
+            f"{marker} {outcome['status']:<8} {tag}"
+            f"{detail[:90]}{'…' if len(detail) > 90 else ''}{write_note}{pivot_tag}"
+        )
+    )
+
+
+def _write_csv(output_file, fields, results):
     with open(output_file, "w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(results)
 
+
+def _summary_line(output_file, results, has_expected, create_path_verifications):
+    """The closing `→ file  STATUS: n ...` line."""
     counts = Counter(r["status"] for r in results)
     summary = "  ".join(f"{s}: {counts[s]}" for s in STATUSES if counts.get(s))
     line = f"\n→ {output_file}   {summary or 'no results'}"
@@ -556,7 +579,7 @@ def bulk(
         line += "   |  verifications → " + "  ".join(
             f"{k}: {v}" for k, v in made.items() if k
         )
-    print(line)
+    return line
 
 
 if __name__ == "__main__":

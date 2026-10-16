@@ -268,14 +268,16 @@ Feel free to explore different options and customize the analysis based on your 
 | `modules/utilis.py` | Severity → icon / coloured word. | — |
 | `modules/pathdiff.py` | Compare two path lookups, locally (`diff_paths`) or via IP Fabric's server-side compare overlay (`compare_snapshots`, `overlay_diff`, `divergence_point`). Returns DataFrames; intended for Jupyter. | `pathgraph`, **pandas** |
 | `modules/pivot.py` | Entry point of the source, from a pivot lookup's `--transit` edge. | `pathgraph` |
-| `modules/pathLookup.py` | Client, lookup call (incl. pivot), event summary, table rendering. | `pathgraph`, `pivot`, `utilis` |
+| `modules/lookup.py` | Client, the one `Unicast` builder, CSV-row parsing, `run_lookup()` with manual and auto pivot. | `pivot`, `verdict` |
+| `modules/display.py` | Event summary, pivot message, raw edge dump, table rendering. | `pathgraph`, `utilis` |
+| `modules/checks.py` | Saved path verifications (the only writes to IP Fabric). | `lookup`, `verdict` |
 
 ### Using it from Jupyter
 
 Nothing in `modules/` imports typer or touches the CLI, so copy the folder as-is.
 The minimum set is **`pathgraph.py` + `utilis.py`**; add `pathdiff.py` for the diff
-side. `pivot.py` and `pathLookup.py` are optional — take them if you want
-`get_pathlookup_model()`, which wraps the lookup including the two-stage pivot.
+side. `pivot.py` and `lookup.py` are optional — take them if you want
+`run_lookup()`, which wraps the lookup including the two-stage pivot.
 
 ```python
 from modules.pathgraph import enrich, show, show_blocked, blocked_hops, flatten

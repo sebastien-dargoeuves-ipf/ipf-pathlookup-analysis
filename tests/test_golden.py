@@ -55,7 +55,6 @@ os.environ["COLUMNS"] = "120"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ipfabric.diagrams import Algorithm
 from ipfabric.diagrams.output_models import PathLookupResult
 from rich import get_console
 
@@ -266,7 +265,7 @@ def record():
     from dotenv import find_dotenv, load_dotenv
 
     from e2e_analysis import _client
-    from modules.pathLookup import unicast_from_row
+    from modules.lookup import flow_from_row, run_lookup, unicast_from_row
 
     # Load .env up front: the snapshot lookups below happen before _client() would
     # otherwise do it, and unset vars silently skip scenarios.
@@ -296,16 +295,12 @@ def record():
 
         client = _client(snapshot)
         if scenario.get("auto_pivot"):
-            # Same two steps as model_row_auto_pivot: reverse lookup -> entry point
-            # -> real lookup pinned to it. Needs the auto-pivot-reverse scenario's flow.
-            flow = scenario["flow"]
-            reverse = {**flow, "srcIP": flow["dstIP"], "dstIP": flow["srcIP"]}
-            entry = return_entry_point_pivot(
-                client.diagram.model(unicast_from_row(reverse))
+            # The real path: plain lookup, reverse lookup, lookup pinned to the entry
+            # point. We keep the Unicast that produced the final result.
+            lookup = run_lookup(
+                client.diagram, flow_from_row(scenario["flow"]), auto_pivot=True
             )
-            unicast = unicast_from_row(
-                flow, first_hop_algorithm=Algorithm(entryPoints=[entry])
-            )
+            unicast = lookup.unicast
         else:
             unicast = unicast_from_row(scenario["flow"])
         data = client.diagram.json(unicast, **kwargs)
