@@ -1,0 +1,29 @@
+== verdict ==
+status: REACHED
+details: Reached 172.15.0.1:3389
+blocked_at: 
+rule: 
+branches: 1
+
+== destinations ==
+transit [transit] ips=['172.15.0.1'] ports=['3389']
+
+== blocked hops ==
+
+== hops ==
+-      HWLAB-A2530 [switch] in=None out=['Vl102'] proto=n/a vrf=None blocked=False terminal=False
+-      HWLAB [router] in=['vlan128_hw_lab_oob'] out=['e1_lab'] proto=ip vrf=main blocked=False terminal=False
+-      transit [transit] in=None out=None proto=n/a vrf=None blocked=False terminal=True
+
+== tree ==
+• HWLAB-A2530 switch  [- → Vl102]  n/a
+• HWLAB       router  [vlan128_hw_lab_oob → e1_lab]  ip  vrf=main
+• transit     transit [- → -]  n/a
+
+== tree --l2 ==
+• HWLAB-A2530 switch  [- → Vl102]  n/a
+• HWLAB       router  [vlan128_hw_lab_oob → e1_lab]  ip  vrf=main
+• transit     transit [- → -]  n/a
+
+== entry point ==
+{'sn': '7C30074607BA', 'iface': 'e1_lab', 'hostname': 'HWLAB'}

@@ -1,0 +1,33 @@
+== verdict ==
+status: REACHED
+details: Reached 10.64.128.5:3389
+blocked_at: 
+rule: 
+branches: 1
+
+== destinations ==
+HWLAB-A2530 [switch] ips=['10.64.128.5'] ports=['3389']
+
+== blocked hops ==
+
+== hops ==
+-      host: 172.15.0.1 [host] in=None out=None proto=n/a vrf=None blocked=False terminal=False
+-      HWLAB [router] in=['e1_lab'] out=['vlan128_hw_lab_oob'] proto=ip vrf=main blocked=False terminal=False
+-      hwl-r1-tor1 [switch] in=['Gi1/0/1'] out=['Gi1/0/48'] proto=l2 vrf=None blocked=False terminal=False
+-      hwl-r2-tor1 [switch] in=['Gi1/0/48'] out=['Gi1/0/25'] proto=l2 vrf=None blocked=False terminal=False
+-      hwl-r2-8-C3850-48T [l3switch] in=['Gi1/0/2'] out=['Gi1/0/6'] proto=l2 vrf=None blocked=False terminal=False
+-      HWLAB-A2530 [switch] in=['Vl102'] out=None proto=ip vrf=None blocked=False terminal=True
+
+== tree ==
+• host: 172.15.0.1   host     [- → -]  n/a
+• HWLAB              router   [e1_lab → vlan128_hw_lab_oob]  ip  vrf=main
+• hwl-r1-tor1        switch   [Gi1/0/1 → Gi1/0/48]  l2
+• hwl-r2-tor1        switch   [Gi1/0/48 → Gi1/0/25]  l2
+• hwl-r2-8-C3850-48T l3switch [Gi1/0/2 → Gi1/0/6]  l2
+• HWLAB-A2530        switch   [Vl102 → -]  ip
+
+== tree --l2 ==
+• host: 172.15.0.1 host   [- → -]  n/a
+• HWLAB            router [e1_lab → vlan128_hw_lab_oob]  ip  vrf=main
+... l2/fp skipped ...
+• HWLAB-A2530      switch [Vl102 → -]  ip

@@ -39,6 +39,7 @@ from modules.pathLookup import (
     display_table,
     get_pathlookup_model,
     get_zonefw_interfaces,
+    model_row_auto_pivot,
     unicast_from_row,
 )
 from modules.verdict import (
@@ -259,6 +260,11 @@ def single(
         help="Enter Pivot IPv4 address",
         callback=validate_ipv4_address_or_empty,
     ),
+    auto_pivot: bool = typer.Option(
+        False,
+        "--auto-pivot",
+        help="On DEFAULT_GW_NOT_FOUND, reverse src/dst to find where the source is connected and retry",
+    ),
     table_display: bool = typer.Option(
         False, "--table", "-t", help="Display result in a table format"
     ),
@@ -284,6 +290,7 @@ def single(
     source_vrf (str): The source VRF (optional).
     secured_path (bool): Whether to use a secured path or not.
     l2_exclusion (bool): Remove L2 and FabricPath information.
+    auto_pivot (bool): retry via the reverse path when the source has no default gateway
     pivot (str): to use to perform two PathLookup, first to identify where the source is connected
     table (bool): display the output as a table
     file (FileText): The JSON file containing Pathlookup output (optional).
@@ -325,6 +332,7 @@ def single(
             fragment_offset=fragment_offset,
             secured_path=secured_path,
             pivot=pivot,
+            auto_pivot=auto_pivot,
         )
         zonefw_interfaces = get_zonefw_interfaces(ipf_client)
     else:
@@ -417,6 +425,11 @@ def bulk(
         "--force-create",
         help="Create even when an identical verification already exists",
     ),
+    auto_pivot: bool = typer.Option(
+        False,
+        "--auto-pivot",
+        help="On DEFAULT_GW_NOT_FOUND, reverse src/dst to find the source's entry point and retry (single-IP sources only)",
+    ),
 ):
     """Run every flow in a CSV, and optionally save them as path verifications.
 
@@ -443,8 +456,10 @@ def bulk(
 
     has_expected = "expected" in rows[0]
     fields = list(rows[0].keys())
-    for field in ["status", "verdict", "blocked_at", "rule", "branches", "details"]:
+    for field in ["status", "verdict", "blocked_at", "rule", "branches", "details", "auto_pivot"]:
         if field == "verdict" and not has_expected:
+            continue
+        if field == "auto_pivot" and not auto_pivot:
             continue
         if field not in fields:
             fields.append(field)
@@ -465,8 +480,13 @@ def bulk(
         label = f"{row.get('srcIP', '?')} → {row.get('dstIP', '?')}"
         print(f"[{index}/{len(rows)}] {label} ...", end=" ")
 
+        pivoted = ""
         try:
-            result = ipf_client.diagram.model(unicast_from_row(row))
+            if auto_pivot:
+                result, pivoted = model_row_auto_pivot(ipf_client, row)
+                out_row["auto_pivot"] = pivoted
+            else:
+                result = ipf_client.diagram.model(unicast_from_row(row))
             outcome = classify(result, zonefw_interfaces)
         except Exception as error:
             outcome = {
@@ -509,6 +529,7 @@ def bulk(
             escape(
                 f"{marker} {outcome['status']:<8} {tag}"
                 f"{detail[:90]}{'…' if len(detail) > 90 else ''}{write_note}"
+                f"{f'  [auto-pivot {pivoted}]' if pivoted else ''}"
             )
         )
         if index < len(rows):

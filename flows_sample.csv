@@ -6,3 +6,5 @@ srcIP,dstIP,srcPort,dstPort,protocol,application,security,comment,expected
 172.16.12.60/24,10.2.0.222,1024-65535,"1-1024",tcp,https,drop,Access to AWS,assess
 172.16.12.60/24,10.2.0.222,1024-65535,"1024-65535",tcp,https,drop,Higher TCP ports to AWS,block
 172.16.12.60/24,172.16.22.60,1024-65535,0,icmp,0,drop,TEST PING,allow
+172.17.19.60,172.16.31.60,1024-65535,0,icmp,0,drop,TEST PING,allow
+172.15.0.1,10.64.128.5,1024-65535,0,icmp,0,drop,TEST PING,allow
