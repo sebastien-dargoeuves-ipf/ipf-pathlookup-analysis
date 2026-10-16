@@ -55,6 +55,7 @@ os.environ["COLUMNS"] = "120"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from ipfabric.diagrams import Algorithm
 from ipfabric.diagrams.output_models import PathLookupResult
 from rich import get_console
 
@@ -75,6 +76,7 @@ from modules.pathgraph import (
     flat_rows,
     show,
 )
+from modules.pivot import return_entry_point_pivot
 from modules.verdict import classify
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -131,6 +133,22 @@ SCENARIOS = [
                "interface name, which is what broke destination detection once",
         "flow": {"srcIP": "172.16.12.60/24", "dstIP": "10.2.0.222",
                  "dstPort": "1024-65535", "protocol": "tcp", "application": "https"},
+    },
+    {
+        "name": "auto-pivot-reverse",
+        "why": "the reverse lookup auto-pivot runs (dst -> src): its first --transit "
+               "edge is the entry point the real lookup gets pinned to",
+        "flow": {"srcIP": "10.64.128.5", "dstIP": "172.15.0.1",
+                 "dstPort": "3389", "protocol": "tcp"},
+        "render": "pivot",
+    },
+    {
+        "name": "auto-pivot-pinned",
+        "why": "src has no default gateway; lookup pinned to the entry point found "
+               "by the reverse path, and it REACHES the destination",
+        "flow": {"srcIP": "172.15.0.1", "dstIP": "10.64.128.5",
+                 "dstPort": "3389", "protocol": "tcp", "security": "continue"},
+        "auto_pivot": True,
     },
 ]
 
@@ -198,6 +216,11 @@ def _capture(fn, *args):
     finally:
         console.width = previous_width
     return buffer.getvalue().rstrip()
+
+
+def render_pivot(res):
+    """A normal render, plus the entry point auto-pivot would extract from it."""
+    return render(res) + f"\n== entry point ==\n{return_entry_point_pivot(res)}\n"
 
 
 def render_overlay(res):
@@ -272,7 +295,20 @@ def record():
             kwargs["overlay"] = {"snapshotToCompare": compare}
 
         client = _client(snapshot)
-        data = client.diagram.json(unicast_from_row(scenario["flow"]), **kwargs)
+        if scenario.get("auto_pivot"):
+            # Same two steps as model_row_auto_pivot: reverse lookup -> entry point
+            # -> real lookup pinned to it. Needs the auto-pivot-reverse scenario's flow.
+            flow = scenario["flow"]
+            reverse = {**flow, "srcIP": flow["dstIP"], "dstIP": flow["srcIP"]}
+            entry = return_entry_point_pivot(
+                client.diagram.model(unicast_from_row(reverse))
+            )
+            unicast = unicast_from_row(
+                flow, first_hop_algorithm=Algorithm(entryPoints=[entry])
+            )
+        else:
+            unicast = unicast_from_row(scenario["flow"])
+        data = client.diagram.json(unicast, **kwargs)
         path = FIXTURES / f"{name}.json"
         path.write_text(json.dumps(data, indent=1, sort_keys=True))
         print(f"  {name}: {path.stat().st_size // 1024} KB")
@@ -295,8 +331,8 @@ def main():
     # Each entry is (name, callable producing the rendered text). Diffs come last
     # because they read two recordings that the loop above must find on disk.
     cases = [
-        (s["name"], (lambda s=s: render_overlay(load(s["name"]))
-                     if s.get("render") == "overlay" else render(load(s["name"]))))
+        (s["name"], (lambda s=s: {"overlay": render_overlay, "pivot": render_pivot}
+                     .get(s.get("render"), render)(load(s["name"]))))
         for s in SCENARIOS
         if (FIXTURES / f"{s['name']}.json").exists()
     ]

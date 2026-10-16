@@ -12,12 +12,13 @@ import ipaddress
 from ipfabric import IPFClient
 from ipfabric.diagrams import Algorithm, OtherOptions, Unicast
 from rich import print
+from rich.markup import escape
 from rich.table import Table
 
 from .pathgraph import flat_rows
 from .pivot import return_entry_point_pivot
 from .utilis import SEVERITY_TEXT, display_severity
-from .verdict import expected_passing_traffic
+from .verdict import classify, expected_passing_traffic
 
 GREEN = "0"
 BLUE = "10"
@@ -123,7 +124,9 @@ def build_unicast(
     return Unicast(**kwargs)
 
 
-def unicast_from_row(row: dict, icmp_application: bool = False) -> Unicast:
+def unicast_from_row(
+    row: dict, icmp_application: bool = False, first_hop_algorithm=None
+) -> Unicast:
     """One CSV row -> a validated `Unicast`.
 
     Only srcIP and dstIP are required; everything else falls back to the DEFAULT_*
@@ -151,7 +154,28 @@ def unicast_from_row(row: dict, icmp_application: bool = False) -> Unicast:
         secured_path=(security != "continue"),
         application=(row.get("application") or "").strip() or None,
         icmp_application=icmp_application,
+        first_hop_algorithm=first_hop_algorithm,
     )
+
+
+def model_row_auto_pivot(ipf_client: IPFClient, row: dict):
+    """Lookup for one CSV row, with auto-pivot on DEFAULT_GW_NOT_FOUND.
+
+    Returns (result, note): note is "host@iface" if the row was re-run pinned to that
+    entry point, "no transit on reverse path: ..." if the pivot failed, else "". Quiet, so it can run inside the bulk progress line.
+    Subnet sources are never pivoted (the events name a single IP)."""
+    result = ipf_client.diagram.model(unicast_from_row(row))
+    src = row["srcIP"].strip()
+    if "/" in src or not _no_default_gw(result, src):
+        return result, ""
+    reverse = {**row, "srcIP": row["dstIP"], "dstIP": src, "security": "continue"}
+    back = ipf_client.diagram.model(unicast_from_row(reverse))
+    entry = return_entry_point_pivot(back)
+    if not entry:
+        return result, f"no transit on reverse path: {_why_no_transit(back)}"
+    algo = Algorithm(entryPoints=[entry])
+    result = ipf_client.diagram.model(unicast_from_row(row, first_hop_algorithm=algo))
+    return result, f"{entry['hostname']}@{entry['iface']}"
 
 
 # ── Path verifications: the only writes to IP Fabric in this repo ─────────────
@@ -211,6 +235,7 @@ def get_pathlookup_model(
     fragment_offset: str,
     secured_path: bool,
     pivot: str = None,
+    auto_pivot: bool = False,
     source_vrf: str = None,
     ipf_diagram: object = None,
 ):
@@ -227,6 +252,7 @@ def get_pathlookup_model(
     fragment_offset (str): The fragment offset value.
     secured_path (bool): Whether to use a secured path or not.
     pivot (str): Optional IP used to first locate where src_ip is connected.
+    auto_pivot (bool): On DEFAULT_GW_NOT_FOUND, pivot through dst_ip (reverse path).
 
     Returns:
     PathLookupResult: the model returned by the SDK (res.nodes / res.edges /
@@ -240,25 +266,17 @@ def get_pathlookup_model(
     )
     if not ipf_diagram:
         ipf_diagram = ipf_client.diagram
+    lookup = dict(
+        protocol=protocol,
+        src_port=src_port,
+        dst_port=dst_port,
+        ttl=ttl,
+        fragment_offset=fragment_offset,
+    )
     if pivot:
-        pivot_result = get_pathlookup_model(
-            ipf_client=ipf_client,
-            ipf_diagram=ipf_diagram,
-            src_ip=pivot,
-            dst_ip=src_ip,
-            protocol=protocol,
-            src_port=src_port,
-            dst_port=dst_port,
-            ttl=ttl,
-            fragment_offset=fragment_offset,
-            secured_path=False,
+        firstHopAlgorithm = _pivot_algorithm(
+            ipf_client, ipf_diagram, pivot, src_ip, firstHopAlgorithm, lookup
         )
-        if entry_point := return_entry_point_pivot(pivot_result):
-            pivot_msg = f"[blue][italic][bold]Info: [/bold][/blue][/italic]Entry point for the source `{src_ip} is: `{entry_point['hostname']}@{entry_point['iface']}`"
-            firstHopAlgorithm = Algorithm(entryPoints=[entry_point])
-        else:
-            pivot_msg = f"[yellow][italic][bold]Warning: [/bold][/yellow][/italic]Pivot `{pivot}` will not be used. From the pivot to the source `({src_ip})` there is no transit."
-        print(pivot_msg)
 
     uni = build_unicast(
         src_ip=src_ip,
@@ -273,7 +291,65 @@ def get_pathlookup_model(
     )
 
     # Call IP Fabric and retrieve the path lookup result
-    return ipf_diagram.model(uni)
+    result = ipf_diagram.model(uni)
+
+    # Auto-pivot: the source has no gateway, so locate it via the reverse path
+    if auto_pivot and not pivot and _no_default_gw(result, src_ip):
+        print(
+            f"[blue][italic][bold]Info: [/bold][/blue][/italic]DEFAULT_GW_NOT_FOUND for `{src_ip}`, auto-pivot: using `{dst_ip}` to find where it is connected"
+        )
+        algo = _pivot_algorithm(
+            ipf_client, ipf_diagram, dst_ip, src_ip, firstHopAlgorithm, lookup
+        )
+        if algo is not firstHopAlgorithm:
+            uni = build_unicast(
+                src_ip=src_ip,
+                dst_ip=dst_ip,
+                secured_path=secured_path,
+                first_hop_algorithm=algo,
+                **lookup,
+            )
+            result = ipf_diagram.model(uni)
+    return result
+
+
+def _no_default_gw(result, src_ip: str) -> bool:
+    """True if the global events report DEFAULT_GW_NOT_FOUND for src_ip."""
+    events = result.pathlookup.model_dump(by_alias=True)["eventsSummary"]["global"]
+    return any(
+        e["name"] == "DEFAULT_GW_NOT_FOUND" and any(src_ip in d for d in e["details"])
+        for e in events
+    )
+
+
+def _pivot_algorithm(ipf_client, ipf_diagram, pivot, src_ip, default, lookup):
+    """
+    Look up pivot -> src_ip and return an entry-point Algorithm for the leaving
+    device, or `default` (with a warning) if that path has no transit.
+    """
+    pivot_result = get_pathlookup_model(
+        ipf_client=ipf_client,
+        ipf_diagram=ipf_diagram,
+        src_ip=pivot,
+        dst_ip=src_ip,
+        secured_path=False,
+        **lookup,
+    )
+    if entry_point := return_entry_point_pivot(pivot_result):
+        print(
+            f"[blue][italic][bold]Info: [/bold][/blue][/italic]Entry point for the source `{src_ip} is: `{entry_point['hostname']}@{entry_point['iface']}`"
+        )
+        return Algorithm(entryPoints=[entry_point])
+    print(
+        f"[yellow][italic][bold]Warning: [/bold][/yellow][/italic]Pivot `{pivot}` will not be used. From the pivot to the source `({src_ip})` there is no transit: {escape(_why_no_transit(pivot_result))}"
+    )
+    return default
+
+
+def _why_no_transit(res) -> str:
+    """Where the reverse (pivot -> src) path stopped, e.g. 'sw01 [switch]: Route ... not found'."""
+    out = classify(res)
+    return ": ".join(filter(None, (out["blocked_at"], out["rule"]))) or out["details"]
 
 
 def display_summary_topics(pathlookup_result: dict):

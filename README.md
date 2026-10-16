@@ -77,6 +77,7 @@ The available options:
 - --secure_path or -sec: Secure the path: stop the flow when hitting security rules.
 - --l2_exclusion or -l2: Remove L2 from the displayed path.
 - --pivot or -pivot: Enter the Pivot IPv4 address.
+- --auto-pivot: If the source has `DEFAULT_GW_NOT_FOUND`, reverse source and destination, find where that path leaves to the transit, and re-run from that device and interface (opt-in).
 - --table or -t: Display result in a table format (see the `Br` column below).
 - --verbose or -v: Enable verbose mode, and add the raw edge dump (section `x`).
 - --file or -f: JSON file containing Pathlookup output \*testing purposes only\*
@@ -108,6 +109,7 @@ python e2e_analysis.py bulk --input flows.csv [--output results.csv] [--limit 10
 | `--limit` | `0` | Only process the first N rows |
 | `--create-path-verifications` | off | **Also create each flow in IP Fabric** |
 | `--force-create` | off | Create even if an identical verification exists |
+| `--auto-pivot` | off | On `DEFAULT_GW_NOT_FOUND`, reverse src/dst, find the source's entry point and retry. Adds an `auto_pivot` output column. Single-IP sources only; saved verifications don't carry the entry point |
 
 `--create-path-verifications` is additive: `bulk` still simulates every row, so one
 pass gives you the outcome **and** the saved verification. That costs 3 API calls
