@@ -1,0 +1,917 @@
+{
+ "graphResult": {
+  "boxLabels": {
+   "IPF-HW-lab": "IPF-HW-lab"
+  },
+  "graphData": {
+   "edges": {
+    "11433!HWLAB@e1_lab--transit--#980": {
+     "direction": "directed",
+     "edgeSettingsId": "a8092d28-cee8-42f8-8179-79182996b924",
+     "id": "11433!HWLAB@e1_lab--transit--#980",
+     "labels": {
+      "source": [
+       {
+        "text": "e1_lab",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [],
+     "packet": [
+      {
+       "dst": "ac1f.6bea.600f",
+       "etherType": "ip",
+       "src": "64d1.545d.c4b4",
+       "type": "ethernet"
+      },
+      {
+       "dst": [
+        "172.15.0.1"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "10.64.128.5"
+       ],
+       "ttl": 126,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "3389"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 312.37155046354366,
+         "y": 40
+        },
+        {
+         "x": 296.37155046354366,
+         "y": 34.5
+        },
+        {
+         "x": 296.37155046354366,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "source": {
+        "anchor": {
+         "x": 0,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 240,
+         "y": 40.5
+        }
+       },
+       "target": {
+        "anchor": {
+         "x": 1,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 281.690481051547,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 220,
+        "y": 40
+       },
+       {
+        "x": 296.37155046354366,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [
+      "11485!HWLAB-A2530@Vl102--11433!HWLAB@vlan128_hw_lab_oob--#979"
+     ],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "11433",
+     "sourceIfaceName": "e1_lab",
+     "style": {
+      "line": {
+       "color": 16751103,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "transit",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 0,
+      "total": 0
+     }
+    },
+    "11485!HWLAB-A2530@Vl102--11433!HWLAB@vlan128_hw_lab_oob--#979": {
+     "direction": "directed",
+     "edgeSettingsId": "e75cbfc0-71c1-4026-8803-08b6f52ee26e",
+     "id": "11485!HWLAB-A2530@Vl102--11433!HWLAB@vlan128_hw_lab_oob--#979",
+     "labels": {
+      "center": [
+       {
+        "text": "102",
+        "type": "subnet",
+        "visible": true
+       }
+      ],
+      "source": [
+       {
+        "text": "Vl102",
+        "type": "intName",
+        "visible": true
+       }
+      ],
+      "target": [
+       {
+        "text": "vlan128_hw_lab_oob",
+        "type": "intName",
+        "visible": true
+       }
+      ]
+     },
+     "nextEdgeIds": [
+      "11433!HWLAB@e1_lab--transit--#980"
+     ],
+     "packet": [
+      {
+       "dst": "64d1.545d.c4b5",
+       "etherType": "ip",
+       "src": "e007.1bab.e440",
+       "type": "ethernet",
+       "vlan": 102
+      },
+      {
+       "dst": [
+        "172.15.0.1"
+       ],
+       "fragment offset": 0,
+       "protocol": "tcp",
+       "src": [
+        "10.64.128.5"
+       ],
+       "ttl": 127,
+       "type": "ip"
+      },
+      {
+       "dst": [
+        "3389"
+       ],
+       "flags": [],
+       "src": [
+        "1024 .. 65535"
+       ],
+       "type": "tcp"
+      }
+     ],
+     "positions": {
+      "arrowHeads": {
+       "target": [
+        {
+         "x": 178,
+         "y": 40
+        },
+        {
+         "x": 162,
+         "y": 34.5
+        },
+        {
+         "x": 162,
+         "y": 45.5
+        }
+       ]
+      },
+      "labels": {
+       "center": {
+        "anchor": {
+         "x": 0.5,
+         "y": 0.5
+        },
+        "angle": 0,
+        "position": {
+         "x": 124.14213562373095,
+         "y": 40.5
+        }
+       }
+      },
+      "line": [
+       {
+        "x": 60,
+        "y": 40
+       },
+       {
+        "x": 162,
+        "y": 40
+       }
+      ]
+     },
+     "prevEdgeIds": [],
+     "severityInfo": {
+      "0": 0,
+      "10": 0,
+      "20": 0,
+      "30": 0
+     },
+     "shift": 0,
+     "source": "11485",
+     "sourceIfaceName": "Vl102",
+     "style": {
+      "line": {
+       "color": 10079487,
+       "pattern": "solid",
+       "thickness": 1
+      }
+     },
+     "target": "11433",
+     "targetIfaceName": "vlan128_hw_lab_oob",
+     "trafficScore": {
+      "accepted": 0,
+      "dropped": 0,
+      "forwarded": 64512,
+      "total": 64512
+     }
+    }
+   },
+   "nodes": {
+    "11433": {
+     "boxId": "IPF-HW-lab",
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "11433",
+     "label": "HWLAB",
+     "parentPath": null,
+     "position": {
+      "x": 200,
+      "y": 40
+     },
+     "sn": "7C30074607BA",
+     "type": "router"
+    },
+    "11485": {
+     "boxId": "IPF-HW-lab",
+     "children": [],
+     "extra": null,
+     "generatedPackets": {
+      "11485@Vl102--generated--#0": {
+       "ifaceName": "Vl102",
+       "nextEdgeIds": [
+        "11485!HWLAB-A2530@Vl102--11433!HWLAB@vlan128_hw_lab_oob--#979"
+       ],
+       "packet": [
+        {
+         "dst": [
+          "172.15.0.1"
+         ],
+         "fragment offset": 0,
+         "protocol": "tcp",
+         "src": [
+          "10.64.128.5"
+         ],
+         "ttl": 128,
+         "type": "ip"
+        },
+        {
+         "dst": [
+          "3389"
+         ],
+         "flags": [],
+         "src": [
+          "1024 .. 65535"
+         ],
+         "type": "tcp"
+        }
+       ],
+       "severityInfo": {
+        "0": 0,
+        "10": 0,
+        "20": 0,
+        "30": 0
+       },
+       "trafficScore": {
+        "accepted": 0,
+        "dropped": 0,
+        "forwarded": 0,
+        "total": 0
+       }
+      }
+     },
+     "graphType": "pathLookup",
+     "id": "11485",
+     "label": "HWLAB-A2530",
+     "parentPath": null,
+     "position": {
+      "x": 40,
+      "y": 40
+     },
+     "sn": "CN60FPD0HF",
+     "style": {
+      "background": "black"
+     },
+     "type": "switch"
+    },
+    "transit": {
+     "boxId": null,
+     "children": [],
+     "extra": null,
+     "graphType": "pathLookup",
+     "id": "transit",
+     "label": "transit",
+     "parentPath": null,
+     "position": {
+      "x": 360,
+      "y": 40
+     },
+     "sn": "transit",
+     "type": "transit"
+    }
+   }
+  },
+  "settings": {
+   "edges": [
+    {
+     "grouped": false,
+     "id": "6129bb53-d19d-47ee-8f45-8829073221c1",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "vxlan",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "f61ad8e8-ce17-11eb-b8bc-0242ac130003",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "capwap",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "7f6aa12d-84da-4481-a968-2119085d2778",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "gre",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "c24cb567-e4dc-4bcd-8f97-9c614c4bb6cd",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "esp",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "f79f180a-9997-4931-9724-97e66b61b79c",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "mpls",
+     "style": {
+      "color": "#ff9800",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "d3f8a1c2-6b4e-4f9a-8c2d-1e7b9f0a3c5d",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "spbmBackbone",
+     "style": {
+      "color": "#9c6ade",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "e75cbfc0-71c1-4026-8803-08b6f52ee26e",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ethernetVlan",
+     "style": {
+      "color": "#99ccff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "a8092d28-cee8-42f8-8179-79182996b924",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ip",
+     "style": {
+      "color": "#ff99ff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "b2e1c7a4-5f3a-4c8e-9e2a-7d8f6b1c2e3f",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ipv6",
+     "style": {
+      "color": "#ff99ff",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "507051b3-aae8-462d-85c4-d5ba1518a1fd",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "ethernet",
+     "style": {
+      "color": "#7aa3cc",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "2bee1ab7-8bfe-470e-9e31-6d0e6917f89d",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "fp",
+     "style": {
+      "color": "#ff9800",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "2e18897e-45c7-4ec8-ae33-bdab14c03f5b",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "aws",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "823d51bb-4ac7-4a71-b3a9-68e05c132507",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "vcmp",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    },
+    {
+     "grouped": false,
+     "id": "304c23e5-0119-4460-86c9-4fe077b135f2",
+     "labels": [
+      "intName",
+      "protocol"
+     ],
+     "labelsOptions": {
+      "wrapCenterLabel": false,
+      "wrapLinecapLabel": false
+     },
+     "name": "meraki-vpn",
+     "style": {
+      "color": "#d4b524",
+      "pattern": "solid",
+      "thicknessThresholds": [
+       2,
+       4,
+       8
+      ]
+     },
+     "type": "pathLookupEdge",
+     "visible": true
+    }
+   ],
+   "pathLookup": {
+    "colorDetectedLoops": true,
+    "ignoredTopics": []
+   }
+  }
+ },
+ "pathlookup": {
+  "check": {
+   "exists": false
+  },
+  "decisions": {
+   "11433": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 0,
+       "10": 0,
+       "20": 0,
+       "30": 0
+      },
+      "sourcePacketId": "11485!HWLAB-A2530@Vl102--11433!HWLAB@vlan128_hw_lab_oob--#979",
+      "targetPacketId": "11433!HWLAB@e1_lab--transit--#980",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "field": "ethernet.dst",
+          "type": "packet data match",
+          "value": "64d1.545d.c4b5"
+         },
+         {
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "remove header"
+         }
+        ],
+        "phase": "in"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "type": "route detail",
+          "value": "mode routing"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 0,
+           "prefix": "0.0.0.0",
+           "vrf": "main"
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 126
+          },
+          "type": "patch header"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "header": {
+           "dst": "ac1f.6bea.600f",
+           "etherType": "ip",
+           "src": "64d1.545d.c4b4",
+           "type": "ethernet"
+          },
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "insert header"
+         }
+        ],
+        "phase": "out"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {
+     "vlan128_hw_lab_oob": [
+      "11485!HWLAB-A2530@Vl102--11433!HWLAB@vlan128_hw_lab_oob--#979"
+     ]
+    },
+    "trafficOut": {
+     "e1_lab": [
+      "11433!HWLAB@e1_lab--transit--#980"
+     ]
+    }
+   },
+   "11485": {
+    "traces": [
+     {
+      "severityInfo": {
+       "0": 0,
+       "10": 0,
+       "20": 0,
+       "30": 0
+      },
+      "sourcePacketId": "11485@Vl102--generated--#0",
+      "targetPacketId": "11485!HWLAB-A2530@Vl102--11433!HWLAB@vlan128_hw_lab_oob--#979",
+      "trace": [
+       {
+        "chain": "main",
+        "events": [
+         {
+          "type": "route detail",
+          "value": "mode routing"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "ip-routing",
+        "events": [
+         {
+          "filter": {
+           "mask": 0,
+           "prefix": "0.0.0.0",
+           "vrf": ""
+          },
+          "table": "vRoute",
+          "type": "table entry match"
+         },
+         {
+          "headerType": "ip",
+          "index": 0,
+          "patch": {
+           "ttl": 127
+          },
+          "type": "patch header"
+         },
+         {
+          "filter": {
+           "ip": "10.64.128.1",
+           "vrf": ""
+          },
+          "table": "vArp",
+          "type": "table entry match"
+         }
+        ],
+        "phase": "core"
+       },
+       {
+        "chain": "main",
+        "events": [
+         {
+          "header": {
+           "dst": "64d1.545d.c4b5",
+           "etherType": "ip",
+           "src": "e007.1bab.e440",
+           "type": "ethernet",
+           "vlan": 102
+          },
+          "headerType": "ethernet",
+          "index": 0,
+          "type": "insert header"
+         }
+        ],
+        "phase": "out"
+       }
+      ]
+     }
+    ],
+    "trafficIn": {},
+    "trafficOut": {
+     "Vl102": [
+      "11485!HWLAB-A2530@Vl102--11433!HWLAB@vlan128_hw_lab_oob--#979"
+     ]
+    }
+   }
+  },
+  "eventsSummary": {
+   "flags": [],
+   "global": [],
+   "topics": {
+    "ACL": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "FORWARDING": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "NAT44": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "PBR": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    },
+    "ZONEFW": {
+     "0": 0,
+     "10": 0,
+     "20": 0,
+     "30": 0
+    }
+   }
+  },
+  "passingTraffic": "all"
+ }
+}
