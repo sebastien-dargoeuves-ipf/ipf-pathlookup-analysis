@@ -16,6 +16,7 @@ from typing import NamedTuple
 
 from ipfabric import IPFClient
 from ipfabric.diagrams import Algorithm, OtherOptions, Unicast
+from ipfabric.diagrams.output_models import PathLookupResult
 
 from .pivot import return_entry_point_pivot
 from .verdict import classify
@@ -167,10 +168,12 @@ class PivotInfo(NamedTuple):
 
 class Lookup(NamedTuple):
     """`unicast` is what produced `result` (pinned to the entry point if a pivot
-    worked); `pivot` is None when no pivot was attempted."""
+    worked) and `raw` is that response's JSON, kept so it can be saved as-is.
+    `pivot` is None when no pivot was attempted."""
 
-    result: object
+    result: PathLookupResult
     unicast: Unicast
+    raw: dict
     pivot: PivotInfo | None
 
 
@@ -189,15 +192,23 @@ def run_lookup(
     result is kept."""
     info = _find_entry(diagram, flow, pivot, auto=False) if pivot else None
     unicast = _pinned(flow, info)
-    result = diagram.model(unicast)
+    result, raw = _fetch(diagram, unicast)
 
     src = flow["src_ip"]
     if auto_pivot and not pivot and "/" not in src and _no_default_gw(result, src):
         info = _find_entry(diagram, flow, flow["dst_ip"], auto=True)
         if info.entry:
             unicast = _pinned(flow, info)
-            result = diagram.model(unicast)
-    return Lookup(result, unicast, info)
+            result, raw = _fetch(diagram, unicast)
+    return Lookup(result, unicast, raw, info)
+
+
+def _fetch(diagram, unicast: Unicast):
+    """One API call: the raw JSON and the typed model parsed from it. (The SDK's own
+    `diagram.model()` also links nodes into edges, which pathgraph does not need —
+    it reads either form — and it throws the JSON away.)"""
+    raw = diagram.json(unicast)
+    return PathLookupResult(**raw), raw
 
 
 def _find_entry(diagram, flow: dict, via: str, auto: bool) -> PivotInfo:
@@ -209,7 +220,7 @@ def _find_entry(diagram, flow: dict, via: str, auto: bool) -> PivotInfo:
         "secured_path": False,
         "first_hop_algorithm": None,
     }
-    back = diagram.model(build_unicast(**reverse))
+    back, _ = _fetch(diagram, build_unicast(**reverse))
     entry = return_entry_point_pivot(back)
     return PivotInfo(via, entry, "" if entry else _why_no_transit(back), auto)
 

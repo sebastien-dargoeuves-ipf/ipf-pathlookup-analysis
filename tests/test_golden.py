@@ -75,6 +75,8 @@ from modules.pathgraph import (
     flat_rows,
     show,
 )
+from modules.lookup import flow_from_row
+from modules.markdown import ReportData, detailed_markdown, summary_markdown
 from modules.pivot import return_entry_point_pivot
 from modules.verdict import classify
 
@@ -123,6 +125,7 @@ SCENARIOS = [
     {
         "name": "rdp-partial-subnet",
         "why": "PARTIAL: one host of the subnet reached, the rest denied",
+        "report": True,  # also snapshot the markdown report
         "flow": {"srcIP": "172.16.12.60/24", "dstIP": "172.16.23.20/24",
                  "dstPort": "3389", "protocol": "tcp", "application": "rdp"},
     },
@@ -130,6 +133,7 @@ SCENARIOS = [
         "name": "aws-cloud-path",
         "why": "cloud node types (transit/awsTgw/awsSubnet/awsEni) — these set no "
                "interface name, which is what broke destination detection once",
+        "report": True,  # also snapshot the markdown report
         "flow": {"srcIP": "172.16.12.60/24", "dstIP": "10.2.0.222",
                  "dstPort": "1024-65535", "protocol": "tcp", "application": "https"},
     },
@@ -145,6 +149,7 @@ SCENARIOS = [
         "name": "auto-pivot-pinned",
         "why": "src has no default gateway; lookup pinned to the entry point found "
                "by the reverse path, and it REACHES the destination",
+        "report": True,  # also snapshot the markdown report
         "flow": {"srcIP": "172.15.0.1", "dstIP": "10.64.128.5",
                  "dstPort": "3389", "protocol": "tcp", "security": "continue"},
         "auto_pivot": True,
@@ -220,6 +225,23 @@ def _capture(fn, *args):
 def render_pivot(res):
     """A normal render, plus the entry point auto-pivot would extract from it."""
     return render(res) + f"\n== entry point ==\n{return_entry_point_pivot(res)}\n"
+
+
+def render_report(scenario):
+    """The detailed and summary markdown a bulk --report-dir would write for this
+    recorded flow. `extra` is fixed text so the snapshot covers the intent rows too."""
+    res = load(scenario["name"])
+    data = ReportData(
+        name=scenario["name"],
+        flow=flow_from_row(scenario["flow"]),
+        outcome=classify(res),
+        result=res,
+        structure=enrich(res),
+        zonefw_interfaces=None,
+        extra={"Intent": "allow", "Verdict": "MATCH"},
+        image=f"{scenario['name']}.png",
+    )
+    return detailed_markdown(data) + "\n=====  summary  =====\n\n" + summary_markdown(data)
 
 
 def render_overlay(res):
@@ -335,6 +357,12 @@ def main():
                if not (FIXTURES / f"{s['name']}.json").exists()]
     for name in missing:
         print(f"?  {name}: no recording yet — run --record")
+
+    cases += [
+        (f"{s['name']}-report", lambda s=s: render_report(s))
+        for s in SCENARIOS
+        if s.get("report") and s["name"] not in missing
+    ]
 
     for pair in DIFFS:
         if pair["a"] in missing or pair["b"] in missing:

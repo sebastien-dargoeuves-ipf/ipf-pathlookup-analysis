@@ -111,6 +111,8 @@ python e2e_analysis.py bulk --input flows.csv [--output results.csv] [--limit 10
 | `--create-path-verifications` | off | **Also create each flow in IP Fabric** |
 | `--force-create` | off | Create even if an identical verification exists |
 | `--auto-pivot` | off | On `DEFAULT_GW_NOT_FOUND`, reverse src/dst, find the source's entry point and retry. Adds an `auto_pivot` output column. Single-IP sources only; saved verifications don't carry the entry point |
+| `--report-dir` | _(none)_ | Write each flow's files into this folder (see below). Adds a `report` output column |
+| `--png` | off | With `--report-dir`: also save each flow's diagram as a PNG |
 
 `--create-path-verifications` is additive: `bulk` still simulates every row, so one
 pass gives you the outcome **and** the saved verification. That costs 3 API calls
@@ -141,6 +143,23 @@ Any other column is copied through unchanged. See
 Appended to the output: `status`, `verdict` (when `expected` is present),
 `blocked_at`, `rule`, `branches`, `details`. With `--create-path-verifications`,
 also `create_status`, `exists`, `check_id`, `job_id`, `expectedPassingTraffic`.
+
+#### Per-flow reports (`--report-dir`)
+
+The CSV is the overview, one line per flow. `--report-dir DIR` (also on `single`) adds the
+detail, one set of files per flow:
+
+| File | Contents |
+| --- | --- |
+| `<flow>.md` | Every branch, hop by hop: interfaces, VRF, zone, security events, blocked hops, and the intent / verdict / pivot for the flow |
+| `<flow>_summary.md` | The verdict and the first path on one line |
+| `<flow>.json` | The raw IP Fabric response (can be used as a golden fixture) |
+| `<flow>.png` | The diagram, with `--png` (one extra API call per flow) |
+
+`<flow>` is `<src>_to_<dst>_<proto>-<dstPort>`, with `/` and `,` made filename-safe, `_sp<port>`
+added for a non-default source port, and `_2`, `_3`... when two rows would get the same name.
+The `.md` is written last. A report that fails to write is noted in the `report` column and
+never stops the run. With `--auto-pivot`, the JSON and PNG are those of the pivoted lookup.
 
 | `status` | Meaning |
 | --- | --- |
@@ -269,6 +288,8 @@ Feel free to explore different options and customize the analysis based on your 
 
 | File | Purpose | Needs |
 | --- | --- | --- |
+| `modules/report.py` | Writes one flow's files (JSON, PNG, markdown) into the report folder; file naming. | `markdown`, `pathgraph` |
+| `modules/markdown.py` | The detailed and summary markdown for one flow. Text only, no I/O. | `pathgraph`, `utilis` |
 | `modules/pathgraph.py` | Walks the graph and enriches each hop (ingress/egress, protocol, VRF, security verdict, ZoneFW, drop reason, delivered packet). Keyed on **edge** id, so a device traversed twice gets one entry per visit. No pandas. | `utilis` |
 | `modules/verdict.py` | One lookup → `REACHED`/`PARTIAL`/`BLOCKED`/`NO-PATH` plus details, and the intent vocabulary (`MATCH`/`MISMATCH`/`ASSESS`, and the `expectedPassingTraffic` mapping used when creating verifications). | `pathgraph` |
 | `modules/utilis.py` | Severity → icon / coloured word. | — |
@@ -302,11 +323,12 @@ reason the diff helpers live in a separate file.
 
 ## Tests
 
-Two scripts, no pytest, no server needed for either. Run both:
+Three scripts, no pytest, no server needed for any. Run them all:
 
 ```shell
 python tests/test_pathgraph.py    # is the logic correct?
 python tests/test_golden.py       # is the output still what it was?
+python tests/test_report.py       # are the report file names right?
 ```
 
 ### `test_pathgraph.py` — is the logic correct?

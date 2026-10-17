@@ -42,6 +42,7 @@ from modules.lookup import (
     run_lookup,
 )
 from modules.pathgraph import collapse_l2, enrich, show, show_blocked
+from modules.report import flow_name, write_flow_report
 from modules.verdict import (
     STATUS_MARKER,
     STATUSES,
@@ -249,6 +250,14 @@ def single(
         "-fp",
         help="Follow one branch at each fork (the first that reaches the destination) in the path view",
     ),
+    report_dir: Path = typer.Option(
+        None,
+        "--report-dir",
+        help="Also write this flow's files here: JSON, markdown report and summary",
+    ),
+    png: bool = typer.Option(
+        False, "--png", help="With --report-dir: also save the diagram as a PNG"
+    ),
     file: typer.FileText = typer.Option(
         None,
         "--file",
@@ -275,11 +284,14 @@ def single(
     pivot (str): to use to perform two PathLookup, first to identify where the source is connected
     table (bool): display the output as a table
     first_path (bool): in the table, follow one branch at each fork
+    report_dir (Path): write the flow's JSON / markdown (and PNG) files there
     file (FileText): The JSON file containing Pathlookup output (optional).
 
     Returns:
     None
     """
+    if png and not report_dir:
+        raise typer.BadParameter("--png only applies with --report-dir")
     # if we use ICMP, we don't need tcp/udp ports
     if protocol == "icmp":
         src_port = 0
@@ -304,7 +316,7 @@ def single(
         flow = {
             "src_ip": src_ip,
             "dst_ip": dst_ip,
-            "protocol": protocol,
+            "protocol": protocol.value,
             "src_port": src_port,
             "dst_port": dst_port,
             "ttl": ttl,
@@ -327,6 +339,7 @@ def single(
         # Using json file to generate the output
         result = PathLookupResult(**json.load(file))
         zonefw_interfaces = None
+        lookup = None
 
     # Summary
     print("\n[bold] 1. Event Summary[/bold]")
@@ -339,6 +352,7 @@ def single(
     # result here means no path regardless of how the entry point was chosen.
     if not result.edges:
         print("\n EXIT -> no Path available")
+        _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, png)
         sys.exit(0)
 
     if verbose:
@@ -358,6 +372,34 @@ def single(
 
     print("\n[bold] 3. Security verdict[/bold]")
     show_blocked(result, zonefw_interfaces)
+
+    _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, png)
+
+
+def _write_report(
+    ipf_client, report_dir, taken, flow, lookup, zonefw_interfaces, png,
+    outcome=None, extra=None,
+):
+    """Write one flow's report files; returns the markdown file name."""
+    outcome = outcome or classify(lookup.result, zonefw_interfaces)
+    png_bytes = ipf_client.diagram.png(lookup.unicast) if png else None
+    return write_flow_report(
+        report_dir, flow_name(flow, taken), flow, lookup, outcome,
+        zonefw_interfaces, extra, png_bytes,
+    )
+
+
+def _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, png):
+    """`single --report-dir`: write the report and say where. Does nothing without
+    --report-dir, or when the result came from --file (no lookup to save)."""
+    if not (report_dir and lookup):
+        return
+    extra = {"Pivot": pivot_note(lookup.pivot)}
+    report = _write_report(
+        ipf_client, report_dir, set(), flow, lookup, zonefw_interfaces, png,
+        extra=extra,
+    )
+    print(f"\n[bold] Report[/bold] -> {report_dir / report}")
 
 
 WRITE_FIELDS = [
@@ -419,6 +461,14 @@ def bulk(
         "--auto-pivot",
         help="On DEFAULT_GW_NOT_FOUND, reverse src/dst to find the source's entry point and retry (single-IP sources only)",
     ),
+    report_dir: Path = typer.Option(
+        None,
+        "--report-dir",
+        help="Write each flow's files here: JSON, markdown report and summary",
+    ),
+    png: bool = typer.Option(
+        False, "--png", help="With --report-dir: also save each diagram as a PNG"
+    ),
 ):
     """Run every flow in a CSV, and optionally save them as path verifications.
 
@@ -430,6 +480,8 @@ def bulk(
         raise typer.BadParameter(
             "--force-create only applies with --create-path-verifications"
         )
+    if png and not report_dir:
+        raise typer.BadParameter("--png only applies with --report-dir")
 
     rows = _read_rows(input_file, limit)
     ipf_client = _client(snapshot)
@@ -437,17 +489,21 @@ def bulk(
     zonefw_interfaces = get_zonefw_interfaces(ipf_client)
 
     has_expected = "expected" in rows[0]
-    fields = _output_fields(rows, has_expected, auto_pivot, create_path_verifications)
+    fields = _output_fields(
+        rows, has_expected, auto_pivot, create_path_verifications, report_dir
+    )
     if create_path_verifications:
         _warn_creating(ipf_client, rows)
 
     results = []
+    taken_names = set()
     for index, row in enumerate(rows, start=1):
         label = f"{row.get('srcIP', '?')} → {row.get('dstIP', '?')}"
         print(f"[{index}/{len(rows)}] {label} ...", end=" ")
 
         out_row = dict(row)
-        outcome, pivoted = _score_row(ipf_client, row, zonefw_interfaces, auto_pivot)
+        outcome, lookup = _score_row(ipf_client, row, zonefw_interfaces, auto_pivot)
+        pivoted = pivot_note(lookup.pivot) if lookup else ""
         out_row.update(outcome)
         if auto_pivot:
             out_row["auto_pivot"] = pivoted
@@ -462,6 +518,11 @@ def bulk(
             write_note = _create_row(
                 ipf_client, row, out_row, outcome["status"], force_create
             )
+        if report_dir and lookup:
+            write_note += _report_row(
+                ipf_client, report_dir, taken_names, row, out_row, lookup,
+                zonefw_interfaces, png, outcome, verdict, pivoted,
+            )
 
         results.append(out_row)
         _print_row_result(outcome, verdict, write_note, pivoted)
@@ -470,6 +531,8 @@ def bulk(
 
     _write_csv(output_file, fields, results)
     print(_summary_line(output_file, results, has_expected, create_path_verifications))
+    if report_dir:
+        print(f"→ reports in {report_dir}/")
 
 
 def _read_rows(input_file: Path, limit: int) -> list[dict]:
@@ -484,7 +547,7 @@ def _read_rows(input_file: Path, limit: int) -> list[dict]:
     return rows
 
 
-def _output_fields(rows, has_expected, auto_pivot, create_path_verifications):
+def _output_fields(rows, has_expected, auto_pivot, create_path_verifications, report_dir):
     """Output columns: the input ones, then the result ones that apply to this run."""
     fields = list(rows[0].keys())
     added = ["status", "verdict", "blocked_at", "rule", "branches", "details"]
@@ -492,6 +555,8 @@ def _output_fields(rows, has_expected, auto_pivot, create_path_verifications):
         added.remove("verdict")
     if auto_pivot:
         added.append("auto_pivot")
+    if report_dir:
+        added.append("report")
     if create_path_verifications:
         added.extend(WRITE_FIELDS)
     fields.extend(f for f in added if f not in fields)
@@ -512,13 +577,14 @@ def _warn_creating(ipf_client, rows):
 
 
 def _score_row(ipf_client, row, zonefw_interfaces, auto_pivot):
-    """Run one row. Returns (outcome, pivot note). A bad row or a failed lookup
-    becomes an ERROR outcome rather than aborting the whole file."""
+    """Run one row. Returns (outcome, lookup); lookup is None when the row failed.
+    A bad row or a failed lookup becomes an ERROR outcome rather than aborting the
+    whole file."""
     try:
         lookup = run_lookup(
             ipf_client.diagram, flow_from_row(row), auto_pivot=auto_pivot
         )
-        return classify(lookup.result, zonefw_interfaces), pivot_note(lookup.pivot)
+        return classify(lookup.result, zonefw_interfaces), lookup
     except Exception as error:
         outcome = {
             "status": "ERROR",
@@ -527,7 +593,31 @@ def _score_row(ipf_client, row, zonefw_interfaces, auto_pivot):
             "rule": "",
             "branches": 0,
         }
-        return outcome, ""
+        return outcome, None
+
+
+def _report_row(
+    ipf_client, report_dir, taken, row, out_row, lookup, zonefw_interfaces, png,
+    outcome, verdict, pivoted,
+):
+    """Write a row's report files and record the .md name in the CSV. A failure here
+    is noted on the console and in the CSV, never fatal to the run."""
+    extra = {
+        "Application": row.get("application"),
+        "Intent": row.get("expected"),
+        "Verdict": verdict,
+        "Pivot": pivoted,
+        "Comment": row.get("comment"),
+    }
+    try:
+        out_row["report"] = _write_report(
+            ipf_client, report_dir, taken, flow_from_row(row), lookup,
+            zonefw_interfaces, png, outcome, extra,
+        )
+        return ""
+    except Exception as error:
+        out_row["report"] = "ERROR"
+        return f"  REPORT ERROR {error}"
 
 
 def _create_row(ipf_client, row, out_row, status, force_create):

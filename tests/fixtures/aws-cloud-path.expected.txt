@@ -25,8 +25,8 @@ vpn1xfw01 [fw] drop=Security rules: packet denied.
 == tree ==
 • host: 172.16.12.0 .. 172.16.12.255 cloud     [- → -]  n/a
 • s1xgw2                             l3switch  [Vl112 → Et2]  ip  vrf=default
-• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (path 
-continues)
+• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (continuing 
+simulation...)
      🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
      🔒 ✅ acl 'LAN_TO_WAN' rule=[0, 1, 5] → ACL_PERMIT
      ✗ Security rules: packet denied.
@@ -40,8 +40,8 @@ esp  vrf=tgw-rtb-0912221debb346727
 == tree --l2 ==
 • host: 172.16.12.0 .. 172.16.12.255 cloud     [- → -]  n/a
 • s1xgw2                             l3switch  [Vl112 → Et2]  ip  vrf=default
-• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (path 
-continues)
+• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (continuing 
+simulation...)
      🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
      🔒 ✅ acl 'LAN_TO_WAN' rule=[0, 1, 5] → ACL_PERMIT
      ✗ Security rules: packet denied.

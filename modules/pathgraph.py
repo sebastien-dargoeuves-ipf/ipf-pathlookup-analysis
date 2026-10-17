@@ -596,7 +596,7 @@ def show(structure, first_path=False):
         flag = ""
         if hop["blocked"]:
             # Not terminal = the lookup ran with Security: Continue, past the deny.
-            more = "" if hop["terminal"] else " (path continues)"
+            more = "" if hop["terminal"] else " (continuing simulation...)"
             flag = f"  [red]⛔ BLOCKED{more}[/red]"
         print(
             f"{pad}• [cyan]{hop['device']:<{wd}}[/cyan] "

@@ -60,11 +60,11 @@ vpn1xfw01 [fw] drop=None
 ⑂ 2 branches
 ├─ branch 1/2
 │  • s1xgw1             l3switch [Et1 → Et2]  ip  vrf=default
-│  • vpn1xfw01          fw       [GigabitEthernet0/1 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (path continues)
+│  • vpn1xfw01          fw       [GigabitEthernet0/1 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (continuing simulation...)
 │       🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 0, 6] → ACL_DENY
 └─ branch 2/2
    • s1xgw2             l3switch [Et1 → Et2]  ip  vrf=default
-   • vpn1xfw01          fw       [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (path continues)
+   • vpn1xfw01          fw       [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (continuing simulation...)
         🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
 ⑃ rejoin
 • transit            transit  [- → -]  n/a
@@ -101,11 +101,11 @@ vrf=tgw-rtb-0912221debb346727
 ⑂ 2 branches
 ├─ branch 1/2
 │  • s1xgw1             l3switch [Et1 → Et2]  ip  vrf=default
-│  • vpn1xfw01          fw       [GigabitEthernet0/1 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (path continues)
+│  • vpn1xfw01          fw       [GigabitEthernet0/1 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (continuing simulation...)
 │       🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 0, 6] → ACL_DENY
 └─ branch 2/2
    • s1xgw2             l3switch [Et1 → Et2]  ip  vrf=default
-   • vpn1xfw01          fw       [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (path continues)
+   • vpn1xfw01          fw       [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (continuing simulation...)
         🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
 ⑃ rejoin
 • transit            transit  [- → -]  n/a
