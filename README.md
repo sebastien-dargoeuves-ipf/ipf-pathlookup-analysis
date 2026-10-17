@@ -11,6 +11,7 @@ Two commands, sharing one graph walker and one intent vocabulary:
 | --- | --- | --- |
 | `single` | One flow, rendered as a tree (or table) with the security verdict. Optional pivot to find where the source is attached. | No |
 | `bulk` | A CSV of flows, each simulated and scored against its stated intent. | Only with `--create-path-verifications` |
+| `dataset` | Builds a `bulk` input CSV from IP Fabric's host inventory. | No |
 
 `bulk --create-path-verifications` is the **one thing in this repo that writes**:
 it saves each flow into IP Fabric's **Path Verifications** table, so the flow is
@@ -94,6 +95,31 @@ python e2e_analysis.py single --source_ip 192.168.1.10 --destination_ip 10.48.11
 ```
 
 Replace the IP addresses and protocol with your desired values.
+
+### `dataset` — generate the input for `bulk`
+
+```shell
+python e2e_analysis.py dataset --output flows.csv [--protocol tcp --dst-port 443] [--vrf prod]
+```
+
+Reads the host inventory, keeps **one host per subnet** (the lowest address), then writes
+every source → destination pair between them: `n` hosts give `n × (n − 1)` flows, or half
+that with `--no-bidirectional`. Thirty subnets is already 870 flows, so check the count it
+prints before running the file with `bulk`.
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--output` / `-o` | `flows_dataset.csv` | Output CSV path |
+| `--snapshot` | _(from `.env`)_ | Snapshot ID |
+| `--protocol` / `-p` | `icmp` | Protocol for every flow |
+| `--dst-port` / `-dp` | `443` | Destination port (tcp/udp; ICMP rows carry none) |
+| `--vrf` | _(all)_ | Only hosts in this VRF; repeat the option for several |
+| `--subnet-prefix` | `24` | One host per subnet of this size; `0` keeps every host |
+| `--bidirectional/--no-bidirectional` | bidirectional | A → B and B → A, or A → B only |
+
+The file has the same header as `flows_sample.csv`, with `srcPort`, `application`,
+`security`, `comment` and `expected` left empty (the defaults apply). Edit it, for
+example fill `expected`, before the `bulk` run. Only IPv4 hosts are used.
 
 ### `bulk` — a CSV of flows
 
@@ -299,6 +325,7 @@ Feel free to explore different options and customize the analysis based on your 
 
 | File | Purpose | Needs |
 | --- | --- | --- |
+| `modules/dataset.py` | Host inventory → one host per subnet → every src/dst pair, as `bulk` input rows. Pure functions. | — |
 | `modules/bulk.py` | One CSV row end to end for `bulk` (lookup or resume, verdict, create, report), plus the output columns and console lines. No printing, thread-safe. | `lookup`, `report`, `checks`, `verdict` |
 | `modules/report.py` | Writes one flow's files (JSON, PNG, markdown) into the report folder; file naming. | `markdown`, `pathgraph` |
 | `modules/markdown.py` | The detailed and summary markdown for one flow. Text only, no I/O. | `pathgraph`, `utilis` |
@@ -335,12 +362,13 @@ reason the diff helpers live in a separate file.
 
 ## Tests
 
-Three scripts, no pytest, no server needed for any. Run them all:
+Four scripts, no pytest, no server needed for any. Run them all:
 
 ```shell
 python tests/test_pathgraph.py    # is the logic correct?
 python tests/test_golden.py       # is the output still what it was?
 python tests/test_report.py       # are the report file names right?
+python tests/test_dataset.py      # is the generated flow list right?
 ```
 
 ### `test_pathgraph.py` — is the logic correct?

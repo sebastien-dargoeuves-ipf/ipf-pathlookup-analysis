@@ -8,6 +8,7 @@ Two ways in:
 - `bulk` — a CSV of flows, each simulated and scored against its stated intent.
   With `--create-path-verifications`, each row is also pushed into IP Fabric's Path
   Verifications table, which is the only thing in this repo that writes.
+- `dataset` — build a `bulk` input CSV from IP Fabric's host inventory.
 """
 
 import csv
@@ -26,6 +27,7 @@ from ipfabric.diagrams.output_models import PathLookupResult
 from rich import print
 
 from modules.bulk import Run, output_fields, plan_names, process_row, result_line, summary_line
+from modules.dataset import flows, host_ips, one_per_subnet, write_dataset
 from modules.display import (
     display_all_edges,
     display_summary_global,
@@ -390,6 +392,56 @@ def _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, png)
         fingerprint(flow, ipf_client.snapshot_id, auto),
     )
     print(f"\n[bold] Report[/bold] -> {report_dir / report}")
+
+
+@app.command()
+def dataset(
+    output_file: Path = typer.Option(
+        "flows_dataset.csv", "--output", "-o", help="Output CSV path (input for `bulk`)"
+    ),
+    snapshot: str = typer.Option(
+        "", "--snapshot", help="Snapshot ID (default: the one from .env / $last)"
+    ),
+    protocol: ProtocolChoices = typer.Option(
+        ProtocolChoices.icmp, "--protocol", "-p", help="Protocol for every flow"
+    ),
+    dst_port: str = typer.Option(
+        "443", "--dst-port", "-dp", help="Destination port (tcp/udp only)"
+    ),
+    vrf: list[str] = typer.Option(
+        None, "--vrf", help="Only hosts in this VRF; repeat for several. Default: all VRFs"
+    ),
+    subnet_prefix: int = typer.Option(
+        24,
+        "--subnet-prefix",
+        min=0,
+        max=32,
+        help="Keep one host (the lowest address) per subnet of this size; 0 keeps every host",
+    ),
+    bidirectional: bool = typer.Option(
+        True, "--bidirectional/--no-bidirectional", help="A -> B and B -> A, or A -> B only"
+    ),
+):
+    """Build a `bulk` input file from the host inventory: one host per subnet, then
+    every source -> destination pair between them. Edit the file (ports, `expected`,
+    `security`) before running it with `bulk`."""
+    ipf_client = _client(snapshot)
+    print(f"Reading hosts from {ipf_client.base_url} ...")
+    ips = host_ips(ipf_client.inventory.hosts.all(), set(vrf or []))
+    chosen = one_per_subnet(ips, subnet_prefix)
+    if len(chosen) < 2:
+        raise typer.BadParameter(
+            f"need at least 2 hosts to build flows, found {len(chosen)} "
+            f"({len(ips)} IPv4 hosts before the per-subnet filter)"
+        )
+    rows = flows(chosen, protocol.value, dst_port, bidirectional)
+    write_dataset(output_file, rows)
+    print(
+        f"{len(ips)} hosts -> {len(chosen)} after one-per-/{subnet_prefix} "
+        f"-> {len(rows)} flows written to {output_file}"
+        if subnet_prefix
+        else f"{len(ips)} hosts -> {len(rows)} flows written to {output_file}"
+    )
 
 
 @app.command()
