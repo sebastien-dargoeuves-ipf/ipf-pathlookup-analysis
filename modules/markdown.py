@@ -28,6 +28,7 @@ class ReportData(NamedTuple):
     zonefw_interfaces: object
     extra: dict
     image: str | None
+    fingerprint: str | None = None
 
 
 def _cell(value) -> str:
@@ -95,6 +96,9 @@ def detailed_markdown(data: ReportData) -> str:
     """Every branch, hop by hop, plus the verdict, events and blocked hops."""
     f, o = data.flow, data.outcome
     out = [f"# {_title(data)}", ""]
+    if data.fingerprint:
+        # Machine-readable: lets --resume tell whether these files fit the current run.
+        out = [f"<!-- flow: {data.fingerprint} -->", ""] + out
     if data.image:
         out += [f"![path]({data.image})", ""]
 

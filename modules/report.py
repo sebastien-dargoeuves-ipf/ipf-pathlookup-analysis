@@ -14,6 +14,8 @@ import json
 import re
 from pathlib import Path
 
+from ipfabric.diagrams.output_models import PathLookupResult
+
 from .lookup import DEFAULT_SRC_PORT
 from .markdown import ReportData, detailed_markdown, summary_markdown
 from .pathgraph import enrich
@@ -39,6 +41,32 @@ def flow_name(flow: dict, taken: set) -> str:
     return unique
 
 
+def fingerprint(flow: dict, snapshot_id: str, auto_pivot: bool) -> str:
+    """Everything that decides what a flow's files contain. It is written into the
+    .md, and `load_saved_flow()` only trusts saved files whose fingerprint matches
+    the current run — so a changed snapshot, security mode or application is not
+    silently resumed from stale files."""
+    keys = ("src_ip", "dst_ip", "protocol", "src_port", "dst_port", "secured_path", "application")
+    wanted = {k: flow[k] for k in keys} | {"snapshot": snapshot_id, "auto_pivot": auto_pivot}
+    return json.dumps(wanted, sort_keys=True)
+
+
+def load_saved_flow(out_dir: Path, name: str, fingerprint_: str, need_png: bool):
+    """A finished flow from an earlier run, as (typed result, pivot note), or None if
+    it is missing, incomplete (no .md: the .md is written last), made for different
+    parameters, or lacks the PNG this run wants."""
+    md, raw = out_dir / f"{name}.md", out_dir / f"{name}.json"
+    if not (md.exists() and raw.exists()):
+        return None
+    if need_png and not (out_dir / f"{name}.png").exists():
+        return None
+    text = md.read_text()
+    if f"<!-- flow: {fingerprint_} -->" not in text:
+        return None
+    pivot = re.search(r"^\| Pivot \| (.*) \|$", text, re.M)
+    return PathLookupResult(**json.loads(raw.read_text())), pivot.group(1) if pivot else ""
+
+
 def write_flow_report(
     out_dir: Path,
     name: str,
@@ -48,6 +76,7 @@ def write_flow_report(
     zonefw_interfaces,
     extra: dict | None = None,
     png: bytes | None = None,
+    fingerprint_: str | None = None,
 ) -> str:
     """Write the flow's files into `out_dir` (created if needed); returns the .md name."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -64,6 +93,7 @@ def write_flow_report(
         zonefw_interfaces=zonefw_interfaces,
         extra=extra or {},
         image=f"{name}.png" if png else None,
+        fingerprint=fingerprint_,
     )
     (out_dir / f"{name}_summary.md").write_text(summary_markdown(data))
     (out_dir / f"{name}.md").write_text(detailed_markdown(data))

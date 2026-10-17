@@ -113,6 +113,8 @@ python e2e_analysis.py bulk --input flows.csv [--output results.csv] [--limit 10
 | `--auto-pivot` | off | On `DEFAULT_GW_NOT_FOUND`, reverse src/dst, find the source's entry point and retry. Adds an `auto_pivot` output column. Single-IP sources only; saved verifications don't carry the entry point |
 | `--report-dir` | _(none)_ | Write each flow's files into this folder (see below). Adds a `report` output column |
 | `--png` | off | With `--report-dir`: also save each flow's diagram as a PNG |
+| `--parallel` | `1` | Run this many flows at once (max 10). `--delay` is then ignored. The CSV stays in input order; console lines appear as flows finish |
+| `--resume` | off | With `--report-dir`: reuse flows finished by an earlier run instead of looking them up again |
 
 `--create-path-verifications` is additive: `bulk` still simulates every row, so one
 pass gives you the outcome **and** the saved verification. That costs 3 API calls
@@ -160,6 +162,15 @@ detail, one set of files per flow:
 added for a non-default source port, and `_2`, `_3`... when two rows would get the same name.
 The `.md` is written last. A report that fails to write is noted in the `report` column and
 never stops the run. With `--auto-pivot`, the JSON and PNG are those of the pivoted lookup.
+
+`--resume` skips a flow when its `.md` and `.json` (and `.png`, if `--png`) already exist
+in the report folder **and** were made for the same parameters. The `.md` starts with a
+`<!-- flow: ... -->` line recording the source, destination, ports, protocol, security
+mode, application, snapshot ID and `--auto-pivot`; if any of them differ, the flow is
+looked up again. Resumed rows are scored from the saved JSON, so the CSV is complete
+(verdict, intent and the `auto_pivot` column included) and the console line ends with
+`[resumed]`. `--create-path-verifications` still runs for every row; it already skips
+verifications that exist.
 
 | `status` | Meaning |
 | --- | --- |
@@ -288,6 +299,7 @@ Feel free to explore different options and customize the analysis based on your 
 
 | File | Purpose | Needs |
 | --- | --- | --- |
+| `modules/bulk.py` | One CSV row end to end for `bulk` (lookup or resume, verdict, create, report), plus the output columns and console lines. No printing, thread-safe. | `lookup`, `report`, `checks`, `verdict` |
 | `modules/report.py` | Writes one flow's files (JSON, PNG, markdown) into the report folder; file naming. | `markdown`, `pathgraph` |
 | `modules/markdown.py` | The detailed and summary markdown for one flow. Text only, no I/O. | `pathgraph`, `utilis` |
 | `modules/pathgraph.py` | Walks the graph and enriches each hop (ingress/egress, protocol, VRF, security verdict, ZoneFW, drop reason, delivered packet). Keyed on **edge** id, so a device traversed twice gets one entry per visit. No pandas. | `utilis` |
