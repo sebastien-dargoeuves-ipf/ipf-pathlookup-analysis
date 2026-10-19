@@ -219,7 +219,8 @@ def _security_text(hop) -> str:
         text = f"{SEVERITY_TEXT[30]} {escape(hop['drop_reason'] or '')}".strip()
     if hop["security"]:
         top = hop["security"][0]
-        text = f"{display_severity(top['severity'], text=True)} {escape(top['policy'] or '')}".strip()
+        default = " (default)" if top["default"] else ""
+        text = f"{display_severity(top['severity'], text=True)} {escape(top['policy'] or '')}{default}".strip()
     if hop["zonefw"]:
         text = f"{text} (zone {escape(str(hop['zonefw']))})".strip()
     return text

@@ -44,7 +44,7 @@ host: 172.16.31.62 [host] ips=['172.16.31.62'] ports=['80']
 • s1xsw01                         switch   [Et1/0 → Et0/1]  l2
 • s1xgw1                          l3switch [Et7 → Et1]  ip  vrf=default
 • d1xfw01                         fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master
-     🔒 ✅ zoneFw 'SITE1@CORE' rule=[1, 2, 3] → ZONEFW_PERMIT
+     🔒 ✅ zoneFw 'SITE1@CORE' → ZONEFW_PERMIT
 ⑂ 2 branches
 ├─ branch 1/2
 │  • d1xr01                          router   [Et0/2 → Et1/1]  ip
@@ -67,7 +67,7 @@ GigabitEthernet4.mpls,GigabitEthernet5.public-internet]  mpls  vrf=100
 ⑃ rejoin
 • d3xr02                          router   [Gi0/4 → Gi0/2]  ip
 • d3xfw02                         fw       [port2 → port3]  ip
-     🔒 ✅ zoneFw 'port2->port3' rule=[0, 0, 0] → ZONEFW_PERMIT
+     🔒 ✅ zoneFw 'port2->port3' → ZONEFW_PERMIT
 • s3xgw2                          l3switch [Et1 → Et7]  ip  vrf=default
 • s3xlbr01                        router   [Et2 → Et4]  ip  vrf=default
 • lb3x02                          lb       [Vl1 → Vl200]  ip  vrf=0
@@ -85,7 +85,7 @@ GigabitEthernet4.mpls,GigabitEthernet5.public-internet]  mpls  vrf=100
 ... l2/fp skipped ...
 • s1xgw1                          l3switch [Et7 → Et1]  ip  vrf=default
 • d1xfw01                         fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master
-     🔒 ✅ zoneFw 'SITE1@CORE' rule=[1, 2, 3] → ZONEFW_PERMIT
+     🔒 ✅ zoneFw 'SITE1@CORE' → ZONEFW_PERMIT
 ⑂ 2 branches
 ├─ branch 1/2
 │  • d1xr01                          router   [Et0/2 → Et1/1]  ip
@@ -108,7 +108,7 @@ GigabitEthernet4.mpls,GigabitEthernet5.public-internet]  mpls  vrf=100
 ⑃ rejoin
 • d3xr02                          router   [Gi0/4 → Gi0/2]  ip
 • d3xfw02                         fw       [port2 → port3]  ip
-     🔒 ✅ zoneFw 'port2->port3' rule=[0, 0, 0] → ZONEFW_PERMIT
+     🔒 ✅ zoneFw 'port2->port3' → ZONEFW_PERMIT
 • s3xgw2                          l3switch [Et1 → Et7]  ip  vrf=default
 • s3xlbr01                        router   [Et2 → Et4]  ip  vrf=default
 • lb3x02                          lb       [Vl1 → Vl200]  ip  vrf=0

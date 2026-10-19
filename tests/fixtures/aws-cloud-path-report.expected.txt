@@ -11,7 +11,7 @@
 | Protocol | tcp |
 | Source port | 1024-65535 |
 | Destination port | 1024-65535 |
-| Security | stop at the first deny |
+| Path shown | stops at the first deny |
 | Intent | allow |
 | Verdict | MATCH |
 
@@ -21,25 +21,25 @@
 
 - Branches: 1
 - Blocked at: vpn1xfw01 [fw]
-- Rule: acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+- Rule: acl 'LAN_TO_WAN' → ACL_DENY
 
 ## Path (all branches)
 
-| # | Device | Type | Ingress | Egress | Protocol | VRF | Zone | Security |
-|---|---|---|---|---|---|---|---|---|
-| 1 | host: 172.16.12.0 .. 172.16.12.255 | cloud | - | - | n/a |  |  |  |
-| 2 | s1xgw2 | l3switch | Vl112 | Et2 | ip | default |  |  |
-| 3 | vpn1xfw01 | fw | GigabitEthernet0/2 | GigabitEthernet0/0 | esp |  |  | BLOCK: acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY<br>OK: acl 'LAN_TO_WAN' rule=[0, 1, 5] → ACL_PERMIT<br>DROP: Security rules: packet denied. |
-| 4 | transit | transit | - | - | n/a |  |  |  |
-| 5 | IPF-LAB | awsTgw | vpn-0edbe102d66f932dc/outside/3.74.102.138 | subnet-06ff93eb663576eff | esp | tgw-rtb-0912221debb346727 |  |  |
-| 6 | lab3 (10.2.0.192/27) | awsSubnet | - | - | n/a |  |  |  |
-| 7 | eni-056071cf31e94a322 | awsEni | - | - | n/a |  |  |  |
-| 8 | host: 10.2.0.222 | cloud | - | - | n/a |  |  |  |
+| # | Device | Type | Ingress | Egress | Protocol | VRF | Zone | Forwarding | Security |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | host: 172.16.12.0 .. 172.16.12.255 | cloud | - | - | n/a |  |  |  |  |
+| 2 | s1xgw2 | l3switch | Vl112 | Et2 | ip | default |  | route 10.2.0.0/24<br>ip ttl 127<br>next-hop 10.255.1.6 |  |
+| 3 | vpn1xfw01 | fw | GigabitEthernet0/2 | GigabitEthernet0/0 | esp |  |  | tcp dst 1024 .. 8079,8081 .. 65535<br>tcp dst 8080<br>route 10.2.0.0/24<br>ip ttl 126<br>IPsec 192.168.99.11 → 3.74.102.138<br>push esp<br>route 3.74.102.138/32<br>ip ttl 63 | BLOCK: acl 'LAN_TO_WAN' → ACL_DENY (default rule)<br>OK: acl 'LAN_TO_WAN' → ACL_PERMIT<br>DROP: Security rules: packet denied. |
+| 4 | transit | transit | - | - | n/a |  |  |  |  |
+| 5 | IPF-LAB | awsTgw | vpn-0edbe102d66f932dc/outside/3.74.102.138 | subnet-06ff93eb663576eff | esp | tgw-rtb-0912221debb346727 |  | route 10.2.0.0/24<br>ip ttl 125 |  |
+| 6 | lab3 (10.2.0.192/27) | awsSubnet | - | - | n/a |  |  |  |  |
+| 7 | eni-056071cf31e94a322 | awsEni | - | - | n/a |  |  |  |  |
+| 8 | host: 10.2.0.222 | cloud | - | - | n/a |  |  |  |  |
 
 ## Blocked hops
 
-- **vpn1xfw01** (fw): Security rules: packet denied.
-  - acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+- **vpn1xfw01** (fw) on GigabitEthernet0/2: Security rules: packet denied.
+  - acl 'LAN_TO_WAN' → ACL_DENY (default rule)
 
 =====  summary  =====
 

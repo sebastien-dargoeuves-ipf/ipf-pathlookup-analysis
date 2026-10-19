@@ -2,7 +2,7 @@
 status: PARTIAL
 details: Reached 172.16.23.21:3389; denied [zone-deny]: d1xfw01 [fw] on ge-0/0/3.0 (ports: 3389)
 blocked_at: d1xfw01 [fw]
-rule: zoneFw 'SITE1@CORE' rule=[1, 2, 10] → ZONEFW_DENY
+rule: zoneFw 'SITE1@CORE' → ZONEFW_DENY
 branches: 9
 
 == destinations ==
@@ -54,10 +54,10 @@ GigabitEthernet4.mpls,GigabitEthernet5.public-internet]  mpls  vrf=100
 │  ⑂ 2 branches
 │  ├─ branch 1/2
 │  │  • d2xfw01                            fw       [ge-0/0/1.0 → ge-0/0/2.0]  ip  vrf=master
-│  │       🔒 ✅ zoneFw 'CORE@SITE2' rule=[1, 1, 2] → ZONEFW_PERMIT
+│  │       🔒 ✅ zoneFw 'CORE@SITE2' → ZONEFW_PERMIT
 │  └─ branch 2/2
 │     • d2xfw01                            fw       [ge-0/0/0.0 → ge-0/0/2.0]  ip  vrf=master
-│          🔒 ✅ zoneFw 'CORE@SITE2' rule=[1, 1, 2] → ZONEFW_PERMIT
+│          🔒 ✅ zoneFw 'CORE@SITE2' → ZONEFW_PERMIT
 │  ⑃ rejoin
 │  • s2xgw1                             l3switch [1/1/1 → Vl223]  ip  vrf=default
 │  • host: 172.16.23.21                 cloud    [- → -]  n/a
@@ -75,16 +75,16 @@ GigabitEthernet4.mpls,GigabitEthernet5.public-internet]  mpls  vrf=100
 │  ⑂ 2 branches
 │  ├─ branch 1/2
 │  │  • d2xfw01                            fw       [ge-0/0/1.0 → ge-0/0/2.0]  ip  vrf=master
-│  │       🔒 ✅ zoneFw 'CORE@SITE2' rule=[1, 1, 2] → ZONEFW_PERMIT
+│  │       🔒 ✅ zoneFw 'CORE@SITE2' → ZONEFW_PERMIT
 │  └─ branch 2/2
 │     • d2xfw01                            fw       [ge-0/0/0.0 → ge-0/0/2.0]  ip  vrf=master
-│          🔒 ✅ zoneFw 'CORE@SITE2' rule=[1, 1, 2] → ZONEFW_PERMIT
+│          🔒 ✅ zoneFw 'CORE@SITE2' → ZONEFW_PERMIT
 │  ⑃ rejoin
 │  • s2xgw1                             l3switch [1/1/1 → Vl223]  ip  vrf=default
 │  • host: 172.16.23.21                 cloud    [- → -]  n/a
 └─ branch 3/3
    • d1xfw01                            fw       [ge-0/0/3.0 → -]  ip  vrf=master  ⛔ BLOCKED
-        🔒 ❌ zoneFw 'SITE1@CORE' rule=[1, 2, 10] → ZONEFW_DENY
+        🔒 ❌ zoneFw 'SITE1@CORE' → ZONEFW_DENY
         ✗ Security rules: packet denied.
 
 == tree --l2 ==
@@ -105,10 +105,10 @@ GigabitEthernet4.mpls,GigabitEthernet5.public-internet]  mpls  vrf=100
 │  ⑂ 2 branches
 │  ├─ branch 1/2
 │  │  • d2xfw01                            fw       [ge-0/0/1.0 → ge-0/0/2.0]  ip  vrf=master
-│  │       🔒 ✅ zoneFw 'CORE@SITE2' rule=[1, 1, 2] → ZONEFW_PERMIT
+│  │       🔒 ✅ zoneFw 'CORE@SITE2' → ZONEFW_PERMIT
 │  └─ branch 2/2
 │     • d2xfw01                            fw       [ge-0/0/0.0 → ge-0/0/2.0]  ip  vrf=master
-│          🔒 ✅ zoneFw 'CORE@SITE2' rule=[1, 1, 2] → ZONEFW_PERMIT
+│          🔒 ✅ zoneFw 'CORE@SITE2' → ZONEFW_PERMIT
 │  ⑃ rejoin
 │  • s2xgw1                             l3switch [1/1/1 → Vl223]  ip  vrf=default
 │  • host: 172.16.23.21                 cloud    [- → -]  n/a
@@ -126,14 +126,14 @@ GigabitEthernet4.mpls,GigabitEthernet5.public-internet]  mpls  vrf=100
 │  ⑂ 2 branches
 │  ├─ branch 1/2
 │  │  • d2xfw01                            fw       [ge-0/0/1.0 → ge-0/0/2.0]  ip  vrf=master
-│  │       🔒 ✅ zoneFw 'CORE@SITE2' rule=[1, 1, 2] → ZONEFW_PERMIT
+│  │       🔒 ✅ zoneFw 'CORE@SITE2' → ZONEFW_PERMIT
 │  └─ branch 2/2
 │     • d2xfw01                            fw       [ge-0/0/0.0 → ge-0/0/2.0]  ip  vrf=master
-│          🔒 ✅ zoneFw 'CORE@SITE2' rule=[1, 1, 2] → ZONEFW_PERMIT
+│          🔒 ✅ zoneFw 'CORE@SITE2' → ZONEFW_PERMIT
 │  ⑃ rejoin
 │  • s2xgw1                             l3switch [1/1/1 → Vl223]  ip  vrf=default
 │  • host: 172.16.23.21                 cloud    [- → -]  n/a
 └─ branch 3/3
    • d1xfw01                            fw       [ge-0/0/3.0 → -]  ip  vrf=master  ⛔ BLOCKED
-        🔒 ❌ zoneFw 'SITE1@CORE' rule=[1, 2, 10] → ZONEFW_DENY
+        🔒 ❌ zoneFw 'SITE1@CORE' → ZONEFW_DENY
         ✗ Security rules: packet denied.

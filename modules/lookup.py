@@ -203,6 +203,15 @@ def run_lookup(
     return Lookup(result, unicast, raw, info)
 
 
+def rerun_unsecured(diagram, lookup: Lookup) -> Lookup:
+    """The same lookup, same entry point, but continuing past denies. Used to show what
+    lies beyond a deny; it cannot tell whether the traffic works (see `run_lookup`
+    with a secured flow for that)."""
+    unicast = lookup.unicast.model_copy(update={"securedPath": False})
+    result, raw = _fetch(diagram, unicast)
+    return Lookup(result, unicast, raw, lookup.pivot)
+
+
 def _fetch(diagram, unicast: Unicast):
     """One API call: the raw JSON and the typed model parsed from it. (The SDK's own
     `diagram.model()` also links nodes into edges, which pathgraph does not need —

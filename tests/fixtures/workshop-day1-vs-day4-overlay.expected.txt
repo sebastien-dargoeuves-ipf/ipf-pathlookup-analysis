@@ -42,7 +42,7 @@ s1xsw03
     • s1xsw01     (switch) [Et1/0 → Et0/1]  [unchanged]
     • s1xgw1      (l3switch) [Et7 → Et1]  [unchanged]
     • d1xfw01     (fw) [ge-0/0/2.0 → ge-0/0/0.0]  [unchanged]
-         🔒 zoneFw 'SITE1@CORE' rule=[1, 1, 3] → ZONEFW_PERMIT
+         🔒 zoneFw 'SITE1@CORE' → ZONEFW_PERMIT
     • d1xr01      (router) [Et0/2 → Et0/1]  [unchanged]
     [31m⊖ c0xr02      (router) [ge-0/0/2.0 → ge-0/0/0.0]  [removed][0m
     [31m⊖ c0xr01      (router) [ge-0/0/0.0 → ge-0/0/1.0]  [removed][0m
@@ -52,7 +52,7 @@ s1xsw03
     [31m⊖ c0xr03      (router) [ge-0/0/1.0 → ge-0/0/3.0]  [removed][0m
     [31m⊖ d3xr01      (router) [Gi0/1 → Gi0/2]  [removed][0m
     [31m⊖ d3xfw01     (fw) [port2 → port3]  [removed][0m
-         🔒 zoneFw 'port2->port3' rule=[0, 0, 0] → ZONEFW_PERMIT
+         🔒 zoneFw 'port2->port3' → ZONEFW_PERMIT
     [31m⊖ s3xgw1      (l3switch) [Et1 → Et7]  [removed][0m
     • s3xlbr01    (router) [Et1 → Et4]  [unchanged]
   ├─ added — compare only:
@@ -85,7 +85,7 @@ s1xsw03
     • s1xsw01     (switch) [Et1/1 → Et0/1]  [unchanged]
     • s1xgw1      (l3switch) [Et7 → Et1]  [unchanged]
     • d1xfw01     (fw) [ge-0/0/2.0 → ge-0/0/0.0]  [unchanged]
-         🔒 zoneFw 'SITE1@CORE' rule=[1, 1, 3] → ZONEFW_PERMIT
+         🔒 zoneFw 'SITE1@CORE' → ZONEFW_PERMIT
     • d1xr01      (router) [Et0/2 → Et0/1]  [unchanged]
     [31m⊖ c0xr02      (router) [ge-0/0/2.0 → ge-0/0/0.0]  [removed][0m
     [31m⊖ c0xr01      (router) [ge-0/0/0.0 → ge-0/0/1.0]  [removed][0m
@@ -95,7 +95,7 @@ s1xsw03
     [31m⊖ c0xr03      (router) [ge-0/0/1.0 → ge-0/0/3.0]  [removed][0m
     [31m⊖ d3xr01      (router) [Gi0/1 → Gi0/2]  [removed][0m
     [31m⊖ d3xfw01     (fw) [port2 → port3]  [removed][0m
-         🔒 zoneFw 'port2->port3' rule=[0, 0, 0] → ZONEFW_PERMIT
+         🔒 zoneFw 'port2->port3' → ZONEFW_PERMIT
     [31m⊖ s3xgw1      (l3switch) [Et1 → Et7]  [removed][0m
     • s3xlbr01    (router) [Et1 → Et4]  [unchanged]
 • lb3x02      (lb) [Vl1 → Vl200]  [unchanged]

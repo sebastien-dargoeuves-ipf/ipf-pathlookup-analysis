@@ -8,6 +8,7 @@ Per-flow markdown reports, built from the same enriched path as the console view
 Pure text in, text out: nothing here touches the API or the disk (see `report.py`).
 """
 
+import json
 from typing import NamedTuple
 
 from .pathgraph import blocked_hops, note_text, path_rows
@@ -29,6 +30,7 @@ class ReportData(NamedTuple):
     extra: dict
     image: str | None
     fingerprint: str | None = None
+    rules: dict | None = None
 
 
 def _cell(value) -> str:
@@ -46,10 +48,12 @@ def _security_events(hop) -> list[str]:
     """One line per security event on a hop, plus its drop reason."""
     lines = []
     for s in hop["security"] or []:
-        rule = f" rule={s['rule']}" if s["rule"] else ""
-        ignored = " (ignored)" if s["ignored"] else ""
+        ignored = (" (ignored)" if s["ignored"] else "") + (
+            " (default rule)" if s["default"] else ""
+        )
         word = SEVERITY_WORD.get(s["severity"], "?")
-        lines.append(f"{word}: {s['type']} '{s['policy']}'{rule} → {s['result']}{ignored}")
+        detail = f" [{s['detail']}]" if s["detail"] else ""
+        lines.append(f"{word}: {s['type']} '{s['policy']}' → {s['result']}{ignored}{detail}")
     if hop["dropped"]:
         lines.append(f"DROP: {hop['drop_reason']}")
     return lines
@@ -64,14 +68,14 @@ def _path_table(structure, first_only=False) -> list[str]:
     """The path as a markdown table; fork / branch / rejoin notes become italic rows
     and branch hops are indented in the Device column."""
     lines = [
-        "| # | Device | Type | Ingress | Egress | Protocol | VRF | Zone | Security |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| # | Device | Type | Ingress | Egress | Protocol | VRF | Zone | Forwarding | Security |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     number = 0
     for depth, hop in path_rows(structure, first_only=first_only):
         indent = "&nbsp;&nbsp;" * depth
         if isinstance(hop, tuple):
-            lines.append(f"| | {indent}*{note_text(hop)}* | | | | | | | |")
+            lines.append(f"| | {indent}*{note_text(hop)}* | | | | | | | | |")
             continue
         number += 1
         security = "<br>".join(_security_events(hop))
@@ -86,6 +90,7 @@ def _path_table(structure, first_only=False) -> list[str]:
             hop["protocol"],
             _vrf(hop),
             hop["zonefw"],
+            "<br>".join(hop["forwarding"]),
             security,
         ]
         lines.append("| " + " | ".join(_cell(c) for c in cells) + " |")
@@ -97,8 +102,15 @@ def detailed_markdown(data: ReportData) -> str:
     f, o = data.flow, data.outcome
     out = [f"# {_title(data)}", ""]
     if data.fingerprint:
-        # Machine-readable: lets --resume tell whether these files fit the current run.
-        out = [f"<!-- flow: {data.fingerprint} -->", ""] + out
+        # Machine-readable, for --resume: the parameters these files were made with, and
+        # the verdict. The verdict is saved rather than recomputed from the JSON because
+        # the JSON is the path SHOWN, which for `security: continue` is not the lookup the
+        # verdict came from.
+        out = [
+            f"<!-- flow: {data.fingerprint} -->",
+            f"<!-- outcome: {json.dumps(data.outcome, sort_keys=True)} -->",
+            "",
+        ] + out
     if data.image:
         out += [f"![path]({data.image})", ""]
 
@@ -109,7 +121,7 @@ def detailed_markdown(data: ReportData) -> str:
         "Protocol": f["protocol"],
         "Source port": None if f["protocol"] == "icmp" else f["src_port"],
         "Destination port": None if f["protocol"] == "icmp" else f["dst_port"],
-        "Security": "stop at the first deny" if f["secured_path"] else "continue past denies",
+        "Path shown": "stops at the first deny" if f["secured_path"] else "continues past denies",
         **data.extra,
     }
     out += [f"| {k} | {_cell(v)} |" for k, v in rows.items() if v not in (None, "")]
@@ -131,13 +143,19 @@ def detailed_markdown(data: ReportData) -> str:
     out += ["", "## Path (all branches)", ""]
     out += _path_table(data.structure) if data.structure else ["No path available."]
 
-    blocked = blocked_hops(data.result, data.zonefw_interfaces)
+    blocked = blocked_hops(data.result, data.zonefw_interfaces, data.rules)
     if blocked:
         out += ["", "## Blocked hops", ""]
         for b in blocked:
-            out.append(f"- **{b['device']}** ({b['type']}): {b['drop_reason'] or 'denied'}")
+            on = f" on {','.join(b['ingress'])}" if b["ingress"] else ""
+            out.append(f"- **{b['device']}** ({b['type']}){on}: {b['drop_reason'] or 'denied'}")
             for d in b["denies"]:
-                out.append(f"  - {d['type']} '{d['policy']}' rule={d['rule']} → {d['result']}")
+                default = " (default rule)" if d["default"] else ""
+                out.append(
+                    f"  - {d['type']} '{d['policy']}' → {d['result']}{default}"
+                )
+                if d["detail"]:
+                    out.append(f"    - Rule: {d['detail']}")
     return "\n".join(out) + "\n"
 
 

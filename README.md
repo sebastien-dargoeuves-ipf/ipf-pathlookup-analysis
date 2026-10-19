@@ -80,8 +80,9 @@ The available options:
 - --pivot or -pivot: Enter the Pivot IPv4 address.
 - --auto-pivot: If the source has `DEFAULT_GW_NOT_FOUND`, reverse source and destination, find where that path leaves to the transit, and re-run from that device and interface (opt-in).
 - --table or -t: Display result in a table format (see *The table* below).
+- --security-detail: Look up the rule behind each deny (see *The deciding rule* below). Off by default: extra calls to IP Fabric.
 - --first-path or -fp: Follow one branch at each fork (tree and table).
-- --verbose or -v: Enable verbose mode, and add the raw edge dump (section `x`).
+- --verbose or -v: Enable verbose mode: add the raw edge dump (section `x`) and, under each hop in the tree, how it forwarded the packet (`↪ route 10.2.0.0/24 · ttl 127 · next-hop 10.1.0.93`: matched route, next hops, MPLS labels, IPsec tunnels, header patches).
 - --file or -f: JSON file containing Pathlookup output \*testing purposes only\*
 
 To run it:
@@ -139,6 +140,7 @@ python e2e_analysis.py bulk --input flows.csv [--output results.csv] [--limit 10
 | `--auto-pivot` | off | On `DEFAULT_GW_NOT_FOUND`, reverse src/dst, find the source's entry point and retry. Adds an `auto_pivot` output column. Single-IP sources only; saved verifications don't carry the entry point |
 | `--report-dir` | _(none)_ | Write each flow's files into this folder (see below). Adds a `report` output column |
 | `--png` | off | With `--report-dir`: also save each flow's diagram as a PNG |
+| `--security-detail` | off | With `--report-dir`: look up the rule behind each deny (see *The deciding rule*). Extra calls to IP Fabric |
 | `--parallel` | `1` | Run this many flows at once (max 10). `--delay` is then ignored. The CSV stays in input order; console lines appear as flows finish |
 | `--resume` | off | With `--report-dir`: reuse flows finished by an earlier run instead of looking them up again |
 
@@ -161,7 +163,7 @@ the **same check id** rather than adding a second copy.
 | `dstPort` | no | `443` | Integer, range, or name |
 | `protocol` | no | `tcp` | `tcp`, `udp`, or `icmp` |
 | `application` | no | _(empty)_ | NGFW app name, e.g. `ssh`, `https` |
-| `security` | no | `drop` | `drop` stops at denies; `continue` simulates past them |
+| `security` | no | `drop` | What the **report** shows: `drop` stops at the first deny, `continue` shows the path beyond it. The **status and verdict never depend on it**: they always come from a lookup that stops at the first deny, because a lookup that simulates past a deny cannot say whether the traffic works |
 | `expected` | no | _(empty)_ | The intent — see below |
 | `comment` | no | _(empty)_ | Free text, copied through |
 
@@ -179,7 +181,7 @@ detail, one set of files per flow:
 
 | File | Contents |
 | --- | --- |
-| `<flow>.md` | Every branch, hop by hop: interfaces, VRF, zone, security events, blocked hops, and the intent / verdict / pivot for the flow |
+| `<flow>.md` | Every branch, hop by hop: interfaces, VRF, zone, forwarding decision (route, next hop, labels, TTL), security events, blocked hops, and the intent / verdict / pivot for the flow |
 | `<flow>_summary.md` | The verdict and the first path on one line |
 | `<flow>.json` | The raw IP Fabric response (can be used as a golden fixture) |
 | `<flow>.png` | The diagram, with `--png` (one extra API call per flow) |
@@ -192,8 +194,8 @@ never stops the run. With `--auto-pivot`, the JSON and PNG are those of the pivo
 `--resume` skips a flow when its `.md` and `.json` (and `.png`, if `--png`) already exist
 in the report folder **and** were made for the same parameters. The `.md` starts with a
 `<!-- flow: ... -->` line recording the source, destination, ports, protocol, security
-mode, application, snapshot ID and `--auto-pivot`; if any of them differ, the flow is
-looked up again. Resumed rows are scored from the saved JSON, so the CSV is complete
+mode, application, snapshot ID, `--auto-pivot` and `--security-detail`; if any of them differ, the flow is
+looked up again. Resumed rows reuse the verdict saved in the `.md` (`<!-- outcome: ... -->`; the JSON is the path *shown*, which for `security: continue` is not the lookup the verdict came from), so the CSV is complete
 (verdict, intent and the `auto_pivot` column included) and the console line ends with
 `[resumed]`. `--create-path-verifications` still runs for every row; it already skips
 verifications that exist.
@@ -247,7 +249,7 @@ marks where they merge again. `--first-path` (`-fp`) shows one branch per fork i
 • s2xsw01            switch   [1/1/3 → 1/1/1]  l2
 • s2xgw1             l3switch [1/1/2 → 1/1/1]  ip  vrf=default
 • d2xfw01            fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master  zone=CORE
-     🔒 ✅ zoneFw 'SITE2@CORE' rule=[1, 0, 0] → ZONEFW_PERMIT (ignored)
+     🔒 ✅ zoneFw 'SITE2@CORE' → ZONEFW_PERMIT (ignored)
 ⑂ 2 branches
 ├─ branch 1/2
 │  • d2xr01             router   [Gi0/3 → Gi0/5]  ip
@@ -258,7 +260,7 @@ marks where they merge again. `--first-path` (`-fp`) shows one branch per fork i
 • lb3x02             lb       [Vl1 → Vl100]  ip  vrf=0
 ...
 • d3xfw02            fw       [port3 → port2]  ip  zone=any  ⛔ BLOCKED
-     🔒 ❌ zoneFw 'main' rule=[0, 2] → ZONEFW_DENY
+     🔒 ❌ zoneFw 'main' → ZONEFW_DENY
 ...
 ⑂ 2 branches
 ├─ branch 1/2
@@ -270,8 +272,38 @@ marks where they merge again. `--first-path` (`-fp`) shows one branch per fork i
 
  3. Security verdict
 ⛔ Traffic blocked at d3xfw02 (fw)
-     rule: zoneFw policy 'main'  rule=[0, 2]  → ZONEFW_DENY
+     rule: zoneFw policy 'main'  → ZONEFW_DENY
 ```
+
+### The deciding rule (`--security-detail`)
+
+By default only what the pathlookup JSON carries is shown: for a security event, the policy
+name (`'LAN_TO_WAN'`) and an opaque rule pointer, which is not shown. It does not say which
+rule matched or what it contains.
+With `--security-detail` (`single`, or `bulk` with `--report-dir`) the rule is looked up in
+IP Fabric's ACL / zone-firewall policy tables and printed under the deny, in the verdict
+section and in the markdown report:
+
+```text
+⛔ Traffic blocked at vpn1xfw01 (fw) on GigabitEthernet0/1
+     rule: acl policy 'LAN_TO_WAN'  → ACL_DENY
+       deny tcp/3389 172.20.22.0 255.255.255.0 → any
+```
+
+- **Cost:** only denies are looked up, one small filtered call per *distinct* rule, and every
+  answer is remembered for the whole run (and shared by `--parallel` workers). A bulk run costs
+  as many calls as there are different blocking rules, not flows, and never downloads a table.
+- **Matching:** the rule is the table row with the same device and policy whose `ruleNumber` is
+  the third number of the event's rule list (the first when it has fewer). This is a heuristic
+  (checked on live data, not documented by IP Fabric), so a rule is shown only when exactly one
+  row matches **and** its action agrees with the verdict. Otherwise the line is simply absent.
+- **ACI:** a contract is an ordinary `acl` check on a leaf. Its rule names source and destination
+  by group tag, which is resolved to the EPG name through the APIC endpoint-groups table, and
+  adds the VNI: `deny tcp/443 web (T1) → db (T1) vni 5003`. The VXLAN header's group and VNI are
+  also shown in the forwarding detail. **This part is covered by synthetic tests only**: the lab
+  it was built on has no APIC data.
+- NAT and cloud events have no rule text (`(default rule)` is shown when the event says the
+  verdict came from the default action).
 
 ### The table (`--table`)
 
@@ -325,6 +357,7 @@ Feel free to explore different options and customize the analysis based on your 
 
 | File | Purpose | Needs |
 | --- | --- | --- |
+| `modules/rules.py` | `--security-detail`: the ACL / zone-firewall / ACI rule behind a deny, in words, looked up on demand and cached. Attached only when unambiguous. | — |
 | `modules/dataset.py` | Host inventory → one host per subnet → every src/dst pair, as `bulk` input rows. Pure functions. | — |
 | `modules/bulk.py` | One CSV row end to end for `bulk` (lookup or resume, verdict, create, report), plus the output columns and console lines. No printing, thread-safe. | `lookup`, `report`, `checks`, `verdict` |
 | `modules/report.py` | Writes one flow's files (JSON, PNG, markdown) into the report folder; file naming. | `markdown`, `pathgraph` |
@@ -362,13 +395,14 @@ reason the diff helpers live in a separate file.
 
 ## Tests
 
-Four scripts, no pytest, no server needed for any. Run them all:
+Five scripts, no pytest, no server needed for any. Run them all:
 
 ```shell
 python tests/test_pathgraph.py    # is the logic correct?
 python tests/test_golden.py       # is the output still what it was?
 python tests/test_report.py       # are the report file names right?
 python tests/test_dataset.py      # is the generated flow list right?
+python tests/test_rules.py        # is the rule lookup cheap, and only named when certain?
 ```
 
 ### `test_pathgraph.py` — is the logic correct?

@@ -15,7 +15,7 @@ from typing import NamedTuple
 from rich.markup import escape
 
 from .checks import build_check_payload, check_exists, create_check
-from .lookup import flow_from_row, pivot_note, run_lookup
+from .lookup import flow_from_row, pivot_note, rerun_unsecured, run_lookup
 from .report import fingerprint, flow_name, load_saved_flow, write_flow_report
 from .verdict import STATUS_MARKER, STATUSES, classify, evaluate_expectation
 
@@ -34,6 +34,7 @@ class Run(NamedTuple):
 
     ipf_client: object
     zonefw_interfaces: object
+    rules: dict | None
     auto_pivot: bool
     has_expected: bool
     create: bool
@@ -73,10 +74,10 @@ def process_row(run: Run, row: dict, name: str | None) -> RowResult:
     out_row = dict(row)
     saved = _load_saved(run, row, name)
     if saved:
-        result, pivoted = saved
-        outcome, lookup = classify(result, run.zonefw_interfaces), None
+        outcome, pivoted = saved
+        lookup = None
     else:
-        outcome, lookup = _score_row(run, row)
+        outcome, lookup, shown = _score_row(run, row)
         pivoted = pivot_note(lookup.pivot) if lookup else ""
 
     out_row.update(outcome)
@@ -94,28 +95,44 @@ def process_row(run: Run, row: dict, name: str | None) -> RowResult:
         if saved:
             out_row["report"] = f"{name}.md"
         elif lookup:
-            note += _report_row(run, row, name, out_row, lookup, outcome, verdict, pivoted)
+            note += _report_row(run, row, name, out_row, shown, outcome, verdict, pivoted)
     return RowResult(out_row, outcome, verdict, pivoted, note, bool(saved))
 
 
 def _load_saved(run: Run, row: dict, name: str | None):
-    """(result, pivot note) from an earlier run's files, if --resume and they fit."""
+    """(outcome, pivot note) from an earlier run's files, if --resume and they fit."""
     if not (run.resume and run.report_dir and name):
         return None
     return load_saved_flow(run.report_dir, name, _fingerprint(run, row), run.png)
 
 
 def _fingerprint(run: Run, row: dict) -> str:
-    return fingerprint(flow_from_row(row), run.ipf_client.snapshot_id, run.auto_pivot)
+    return fingerprint(
+        flow_from_row(row), run.ipf_client.snapshot_id, run.auto_pivot, run.rules is not None
+    )
 
 
 def _score_row(run: Run, row: dict):
-    """Returns (outcome, lookup); lookup is None when the row failed."""
+    """Returns (outcome, lookup, shown): the verdict, the lookup it came from, and the
+    lookup whose path the report shows. All three are None / error-shaped when the
+    row failed.
+
+    The verdict ALWAYS comes from a lookup that stops at the first deny: one that
+    simulates past a deny cannot say whether the traffic works. A row with
+    `security: continue` additionally gets a continuing lookup for the report, so the
+    path beyond the deny is still visible."""
     try:
+        flow = flow_from_row(row)
         lookup = run_lookup(
-            run.ipf_client.diagram, flow_from_row(row), auto_pivot=run.auto_pivot
+            run.ipf_client.diagram,
+            {**flow, "secured_path": True},
+            auto_pivot=run.auto_pivot,
         )
-        return classify(lookup.result, run.zonefw_interfaces), lookup
+        outcome = classify(lookup.result, run.zonefw_interfaces)
+        shown = lookup
+        if not flow["secured_path"] and run.report_dir:
+            shown = rerun_unsecured(run.ipf_client.diagram, lookup)
+        return outcome, lookup, shown
     except Exception as error:
         outcome = {
             "status": "ERROR",
@@ -124,10 +141,10 @@ def _score_row(run: Run, row: dict):
             "rule": "",
             "branches": 0,
         }
-        return outcome, None
+        return outcome, None, None
 
 
-def _report_row(run, row, name, out_row, lookup, outcome, verdict, pivoted):
+def _report_row(run, row, name, out_row, shown, outcome, verdict, pivoted):
     """Write a row's report files and record the .md name in the CSV. A failure is
     noted on the console and in the CSV, never fatal to the run."""
     flow = flow_from_row(row)
@@ -139,10 +156,10 @@ def _report_row(run, row, name, out_row, lookup, outcome, verdict, pivoted):
         "Comment": row.get("comment"),
     }
     try:
-        png = run.ipf_client.diagram.png(lookup.unicast) if run.png else None
+        png = run.ipf_client.diagram.png(shown.unicast) if run.png else None
         out_row["report"] = write_flow_report(
-            run.report_dir, name, flow, lookup, outcome, run.zonefw_interfaces,
-            extra, png, _fingerprint(run, row),
+            run.report_dir, name, flow, shown, outcome, run.zonefw_interfaces,
+            extra, png, _fingerprint(run, row), run.rules,
         )
         return ""
     except Exception as error:

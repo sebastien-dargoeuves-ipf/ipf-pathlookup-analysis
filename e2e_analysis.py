@@ -43,6 +43,7 @@ from modules.lookup import (
 )
 from modules.pathgraph import collapse_l2, enrich, show, show_blocked
 from modules.report import fingerprint, flow_name, write_flow_report
+from modules.rules import Rules
 from modules.verdict import (
     classify,
     normalise_expected,
@@ -247,6 +248,11 @@ def single(
         "-fp",
         help="Follow one branch at each fork (the first that reaches the destination) in the path view",
     ),
+    security_detail: bool = typer.Option(
+        False,
+        "--security-detail",
+        help="Look up the rule behind each deny (ACL / zone firewall, ACI group names) in IP Fabric; extra calls",
+    ),
     report_dir: Path = typer.Option(
         None,
         "--report-dir",
@@ -281,6 +287,7 @@ def single(
     pivot (str): to use to perform two PathLookup, first to identify where the source is connected
     table (bool): display the output as a table
     first_path (bool): in the table, follow one branch at each fork
+    security_detail (bool): look up the rule behind each deny
     report_dir (Path): write the flow's JSON / markdown (and PNG) files there
     file (FileText): The JSON file containing Pathlookup output (optional).
 
@@ -332,10 +339,12 @@ def single(
             show_pivot(lookup.pivot, src_ip)
         result = lookup.result
         zonefw_interfaces = get_zonefw_interfaces(ipf_client)
+        rules = Rules(ipf_client) if security_detail else None
     else:
         # Using json file to generate the output
         result = PathLookupResult(**json.load(file))
         zonefw_interfaces = None
+        rules = None
         lookup = None
 
     # Summary
@@ -349,14 +358,14 @@ def single(
     # result here means no path regardless of how the entry point was chosen.
     if not result.edges:
         print("\n EXIT -> no Path available")
-        _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, png)
+        _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, rules, png)
         sys.exit(0)
 
     if verbose:
         print("\n[bold] x. Path Edges[/bold] (explore all nextEdgeId)")
         display_all_edges(result.edges)
 
-    path = enrich(result, zonefw_interfaces)
+    path = enrich(result, zonefw_interfaces, rules)
     if l2_exclusion:
         path = collapse_l2(path)
 
@@ -365,15 +374,15 @@ def single(
     if table_display:
         display_table(path, first_path=first_path)
     else:
-        show(path, first_path=first_path)
+        show(path, first_path=first_path, details=verbose)
 
     print("\n[bold] 3. Security verdict[/bold]")
-    show_blocked(result, zonefw_interfaces)
+    show_blocked(result, zonefw_interfaces, rules)
 
-    _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, png)
+    _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, rules, png)
 
 
-def _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, png):
+def _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, rules, png):
     """`single --report-dir`: write the flow's files and say where. Does nothing
     without --report-dir, or when the result came from --file (no lookup to save)."""
     if not (report_dir and lookup):
@@ -389,7 +398,8 @@ def _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, png)
         zonefw_interfaces,
         {"Pivot": pivot_note(lookup.pivot)},
         png_bytes,
-        fingerprint(flow, ipf_client.snapshot_id, auto),
+        fingerprint(flow, ipf_client.snapshot_id, auto, rules is not None),
+        rules,
     )
     print(f"\n[bold] Report[/bold] -> {report_dir / report}")
 
@@ -472,6 +482,11 @@ def bulk(
         "--auto-pivot",
         help="On DEFAULT_GW_NOT_FOUND, reverse src/dst to find the source's entry point and retry (single-IP sources only)",
     ),
+    security_detail: bool = typer.Option(
+        False,
+        "--security-detail",
+        help="Look up the rule behind each deny (ACL / zone firewall, ACI group names) in IP Fabric; extra calls",
+    ),
     report_dir: Path = typer.Option(
         None,
         "--report-dir",
@@ -503,11 +518,14 @@ def bulk(
         raise typer.BadParameter("--png only applies with --report-dir")
     if resume and not report_dir:
         raise typer.BadParameter("--resume only applies with --report-dir")
+    if security_detail and not report_dir:
+        raise typer.BadParameter("--security-detail only applies with --report-dir")
 
     rows = _read_rows(input_file, limit)
     ipf_client = _client(snapshot)
     # Once, not per row — it is the same table for every flow.
     zonefw_interfaces = get_zonefw_interfaces(ipf_client)
+    rules = Rules(ipf_client) if security_detail else None
 
     has_expected = "expected" in rows[0]
     fields = output_fields(
@@ -517,7 +535,7 @@ def bulk(
         _warn_creating(ipf_client, rows)
 
     run = Run(
-        ipf_client, zonefw_interfaces, auto_pivot, has_expected,
+        ipf_client, zonefw_interfaces, rules, auto_pivot, has_expected,
         create_path_verifications, force_create, report_dir, png, resume,
     )
     names = plan_names(rows) if report_dir else [None] * len(rows)
