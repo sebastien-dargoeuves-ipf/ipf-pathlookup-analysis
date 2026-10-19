@@ -26,7 +26,14 @@ from dotenv import find_dotenv, load_dotenv
 from ipfabric.diagrams.output_models import PathLookupResult
 from rich import print
 
-from modules.bulk import Run, output_fields, plan_names, process_row, result_line, summary_line
+from modules.bulk import (
+    Run,
+    output_fields,
+    plan_names,
+    process_row,
+    result_line,
+    summary_line,
+)
 from modules.dataset import flows, host_ips, one_per_subnet, write_dataset
 from modules.display import (
     display_all_edges,
@@ -358,7 +365,9 @@ def single(
     # result here means no path regardless of how the entry point was chosen.
     if not result.edges:
         print("\n EXIT -> no Path available")
-        _report_single(ipf_client, report_dir, flow, lookup, zonefw_interfaces, rules, png)
+        _report_single(
+            ipf_client, report_dir, flow, lookup, zonefw_interfaces, rules, png
+        )
         sys.exit(0)
 
     if verbose:
@@ -419,7 +428,9 @@ def dataset(
         "443", "--dst-port", "-dp", help="Destination port (tcp/udp only)"
     ),
     vrf: list[str] = typer.Option(
-        None, "--vrf", help="Only hosts in this VRF; repeat for several. Default: all VRFs"
+        None,
+        "--vrf",
+        help="Only hosts in this VRF; repeat for several. Default: all VRFs",
     ),
     subnet_prefix: int = typer.Option(
         24,
@@ -429,7 +440,9 @@ def dataset(
         help="Keep one host (the lowest address) per subnet of this size; 0 keeps every host",
     ),
     bidirectional: bool = typer.Option(
-        True, "--bidirectional/--no-bidirectional", help="A -> B and B -> A, or A -> B only"
+        True,
+        "--bidirectional/--no-bidirectional",
+        help="A -> B and B -> A, or A -> B only",
     ),
 ):
     """Build a `bulk` input file from the host inventory: one host per subnet, then
@@ -496,7 +509,11 @@ def bulk(
         False, "--png", help="With --report-dir: also save each diagram as a PNG"
     ),
     parallel: int = typer.Option(
-        1, "--parallel", min=1, max=10, help="Run this many flows at once (--delay is then ignored)"
+        1,
+        "--parallel",
+        min=1,
+        max=10,
+        help="Run this many flows at once (--delay is then ignored)",
     ),
     resume: bool = typer.Option(
         False,
@@ -535,8 +552,16 @@ def bulk(
         _warn_creating(ipf_client, rows)
 
     run = Run(
-        ipf_client, zonefw_interfaces, rules, auto_pivot, has_expected,
-        create_path_verifications, force_create, report_dir, png, resume,
+        ipf_client,
+        zonefw_interfaces,
+        rules,
+        auto_pivot,
+        has_expected,
+        create_path_verifications,
+        force_create,
+        report_dir,
+        png,
+        resume,
     )
     names = plan_names(rows) if report_dir else [None] * len(rows)
     results = _run_rows(run, rows, names, parallel, delay)

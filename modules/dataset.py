@@ -16,8 +16,15 @@ from pathlib import Path
 # (source port 1024-65535, security 'drop'), and an empty `expected` just means
 # "no stated intent" for the verdict and create steps.
 FIELDS = [
-    "srcIP", "dstIP", "srcPort", "dstPort", "protocol",
-    "application", "security", "comment", "expected",
+    "srcIP",
+    "dstIP",
+    "srcPort",
+    "dstPort",
+    "protocol",
+    "application",
+    "security",
+    "comment",
+    "expected",
 ]
 
 
@@ -44,11 +51,15 @@ def one_per_subnet(ips: list[str], prefix: int) -> list[str]:
         return ips
     representatives = {}
     for ip in ips:
-        representatives.setdefault(ipaddress.ip_network(f"{ip}/{prefix}", strict=False), ip)
+        representatives.setdefault(
+            ipaddress.ip_network(f"{ip}/{prefix}", strict=False), ip
+        )
     return list(representatives.values())
 
 
-def flows(ips: list[str], protocol: str, dst_port: str, bidirectional: bool) -> list[dict]:
+def flows(
+    ips: list[str], protocol: str, dst_port: str, bidirectional: bool
+) -> list[dict]:
     """Every pair of `ips` as a CSV row: A -> B and B -> A, or only A -> B (in address
     order) when not bidirectional. ICMP rows carry no port."""
     pairs = permutations(ips, 2) if bidirectional else combinations(ips, 2)

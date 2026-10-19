@@ -95,7 +95,9 @@ def process_row(run: Run, row: dict, name: str | None) -> RowResult:
         if saved:
             out_row["report"] = f"{name}.md"
         elif lookup:
-            note += _report_row(run, row, name, out_row, shown, outcome, verdict, pivoted)
+            note += _report_row(
+                run, row, name, out_row, shown, outcome, verdict, pivoted
+            )
     return RowResult(out_row, outcome, verdict, pivoted, note, bool(saved))
 
 
@@ -108,7 +110,10 @@ def _load_saved(run: Run, row: dict, name: str | None):
 
 def _fingerprint(run: Run, row: dict) -> str:
     return fingerprint(
-        flow_from_row(row), run.ipf_client.snapshot_id, run.auto_pivot, run.rules is not None
+        flow_from_row(row),
+        run.ipf_client.snapshot_id,
+        run.auto_pivot,
+        run.rules is not None,
     )
 
 
@@ -158,8 +163,16 @@ def _report_row(run, row, name, out_row, shown, outcome, verdict, pivoted):
     try:
         png = run.ipf_client.diagram.png(shown.unicast) if run.png else None
         out_row["report"] = write_flow_report(
-            run.report_dir, name, flow, shown, outcome, run.zonefw_interfaces,
-            extra, png, _fingerprint(run, row), run.rules,
+            run.report_dir,
+            name,
+            flow,
+            shown,
+            outcome,
+            run.zonefw_interfaces,
+            extra,
+            png,
+            _fingerprint(run, row),
+            run.rules,
         )
         return ""
     except Exception as error:

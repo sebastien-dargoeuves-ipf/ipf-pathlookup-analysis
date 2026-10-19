@@ -476,7 +476,7 @@ def hop_details(res, zonefw_interfaces=None, rules=None):
 
 def enrich(res, zonefw_interfaces=None, rules=None):
     """Nested hop structure: hop dicts in path order, forks as nested lists.
-    `rules` (rules.load_rules) adds the deciding rule's text to each security entry."""
+    `rules` (rules.Rules, from --security-detail) adds the deciding rule's text to each security entry."""
     d = hop_details(res, zonefw_interfaces, rules)
 
     def render(x):

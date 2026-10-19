@@ -53,7 +53,9 @@ def _security_events(hop) -> list[str]:
         )
         word = SEVERITY_WORD.get(s["severity"], "?")
         detail = f" [{s['detail']}]" if s["detail"] else ""
-        lines.append(f"{word}: {s['type']} '{s['policy']}' → {s['result']}{ignored}{detail}")
+        lines.append(
+            f"{word}: {s['type']} '{s['policy']}' → {s['result']}{ignored}{detail}"
+        )
     if hop["dropped"]:
         lines.append(f"DROP: {hop['drop_reason']}")
     return lines
@@ -121,7 +123,9 @@ def detailed_markdown(data: ReportData) -> str:
         "Protocol": f["protocol"],
         "Source port": None if f["protocol"] == "icmp" else f["src_port"],
         "Destination port": None if f["protocol"] == "icmp" else f["dst_port"],
-        "Path shown": "stops at the first deny" if f["secured_path"] else "continues past denies",
+        "Path shown": "stops at the first deny"
+        if f["secured_path"]
+        else "continues past denies",
         **data.extra,
     }
     out += [f"| {k} | {_cell(v)} |" for k, v in rows.items() if v not in (None, "")]
@@ -148,12 +152,12 @@ def detailed_markdown(data: ReportData) -> str:
         out += ["", "## Blocked hops", ""]
         for b in blocked:
             on = f" on {','.join(b['ingress'])}" if b["ingress"] else ""
-            out.append(f"- **{b['device']}** ({b['type']}){on}: {b['drop_reason'] or 'denied'}")
+            out.append(
+                f"- **{b['device']}** ({b['type']}){on}: {b['drop_reason'] or 'denied'}"
+            )
             for d in b["denies"]:
                 default = " (default rule)" if d["default"] else ""
-                out.append(
-                    f"  - {d['type']} '{d['policy']}' → {d['result']}{default}"
-                )
+                out.append(f"  - {d['type']} '{d['policy']}' → {d['result']}{default}")
                 if d["detail"]:
                     out.append(f"    - Rule: {d['detail']}")
     return "\n".join(out) + "\n"

@@ -15,12 +15,12 @@ from modules.lookup import flow_from_row
 
 HOSTS = [
     {"ip": "10.0.1.20", "vrf": "a"},
-    {"ip": "10.0.1.5", "vrf": "a"},      # same /24 as .20, lower address
+    {"ip": "10.0.1.5", "vrf": "a"},  # same /24 as .20, lower address
     {"ip": "10.0.2.9", "vrf": "b"},
-    {"ip": "10.0.1.20", "vrf": "b"},     # duplicate IP in another VRF
-    {"ip": "2001:db8::1", "vrf": "a"},   # IPv6: skipped
-    {"ip": "", "vrf": "a"},              # no IP: skipped
-    {"ip": "not-an-ip", "vrf": "a"},     # garbage: skipped
+    {"ip": "10.0.1.20", "vrf": "b"},  # duplicate IP in another VRF
+    {"ip": "2001:db8::1", "vrf": "a"},  # IPv6: skipped
+    {"ip": "", "vrf": "a"},  # no IP: skipped
+    {"ip": "not-an-ip", "vrf": "a"},  # garbage: skipped
 ]
 
 
@@ -35,9 +35,11 @@ def main():
 
     two_way = flows(["10.0.1.5", "10.0.2.9"], "tcp", "443", bidirectional=True)
     assert [(r["srcIP"], r["dstIP"]) for r in two_way] == [
-        ("10.0.1.5", "10.0.2.9"), ("10.0.2.9", "10.0.1.5")]
-    assert len(flows(ips, "tcp", "443", bidirectional=False)) == 3   # n*(n-1)/2
-    assert len(flows(ips, "tcp", "443", bidirectional=True)) == 6    # n*(n-1)
+        ("10.0.1.5", "10.0.2.9"),
+        ("10.0.2.9", "10.0.1.5"),
+    ]
+    assert len(flows(ips, "tcp", "443", bidirectional=False)) == 3  # n*(n-1)/2
+    assert len(flows(ips, "tcp", "443", bidirectional=True)) == 6  # n*(n-1)
     assert flows(["10.0.1.5", "10.0.2.9"], "icmp", "443", True)[0]["dstPort"] == ""
 
     # The file has the standard header and every row is a valid bulk input row.

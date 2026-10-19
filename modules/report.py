@@ -39,12 +39,22 @@ def flow_name(flow: dict, taken: set) -> str:
     return unique
 
 
-def fingerprint(flow: dict, snapshot_id: str, auto_pivot: bool, security_detail: bool = False) -> str:
+def fingerprint(
+    flow: dict, snapshot_id: str, auto_pivot: bool, security_detail: bool = False
+) -> str:
     """Everything that decides what a flow's files contain. It is written into the
     .md, and `load_saved_flow()` only trusts saved files whose fingerprint matches
     the current run — so a changed snapshot, security mode or application is not
     silently resumed from stale files."""
-    keys = ("src_ip", "dst_ip", "protocol", "src_port", "dst_port", "secured_path", "application")
+    keys = (
+        "src_ip",
+        "dst_ip",
+        "protocol",
+        "src_port",
+        "dst_port",
+        "secured_path",
+        "application",
+    )
     wanted = {k: flow.get(k) for k in keys} | {
         "snapshot": snapshot_id,
         "auto_pivot": auto_pivot,
@@ -85,7 +95,9 @@ def write_flow_report(
 ) -> str:
     """Write the flow's files into `out_dir` (created if needed); returns the .md name."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / f"{name}.json").write_text(json.dumps(lookup.raw, indent=1, sort_keys=True))
+    (out_dir / f"{name}.json").write_text(
+        json.dumps(lookup.raw, indent=1, sort_keys=True)
+    )
     if png:
         (out_dir / f"{name}.png").write_bytes(png)
 

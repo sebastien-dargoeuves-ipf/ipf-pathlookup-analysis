@@ -5,7 +5,7 @@ whole CSV of them.
 
 ## Introduction
 
-Two commands, sharing one graph walker and one intent vocabulary:
+Three commands, sharing one graph walker and one intent vocabulary:
 
 | Command | What it does | Writes to IP Fabric? |
 | --- | --- | --- |
@@ -16,6 +16,20 @@ Two commands, sharing one graph walker and one intent vocabulary:
 `bulk --create-path-verifications` is the **one thing in this repo that writes**:
 it saves each flow into IP Fabric's **Path Verifications** table, so the flow is
 re-evaluated on every snapshot instead of being a one-off simulation.
+
+What it gives you, beyond running a path lookup:
+
+- **A verdict per flow** (`REACHED` / `PARTIAL` / `BLOCKED` / `NO-PATH`), always from a lookup
+  that stops at the first deny, compared with the intent you state (`expected`).
+- **Every branch, readable**: a tree or table with labelled forks and rejoins, or just the first
+  path with `--first-path`.
+- **Auto-pivot** for sources with no default gateway (`--auto-pivot`).
+- **Per-flow files** (`--report-dir`): detailed and summary markdown, the raw JSON, and a PNG.
+- **Scale**: `--parallel`, `--resume`, and `dataset` to generate the flow list from the inventory.
+- **Why it was blocked** (`--security-detail`): the ACL / zone-firewall / ACI rule behind a deny.
+
+The report files, `dataset`, the parallel and resumable runs and the security detail follow the
+ideas of the **path-analyzer** (`pathtest`) tool, rebuilt on this tool's typed result model.
 
 > ⚠️ Path lookup results are a **simulation**. Treat the output as draft validation
 > evidence and have a network engineer review it before it feeds any audit or
@@ -60,6 +74,8 @@ pip install pandas          # optional: only for modules/pathdiff.py
 python e2e_analysis.py single -s 192.168.1.10 -d 8.8.8.8 -p icmp
 python e2e_analysis.py bulk --input flows.csv
 python e2e_analysis.py bulk --input flows.csv --create-path-verifications
+python e2e_analysis.py bulk --input flows.csv --report-dir out --png --parallel 4 --resume
+python e2e_analysis.py dataset --output flows.csv
 ```
 
 Running `e2e_analysis.py` with no arguments lists the commands.
@@ -69,7 +85,7 @@ Running `e2e_analysis.py` with no arguments lists the commands.
 The available options:
 
 - --source_ip or -s: Enter the source IPv4 address or subnet.
-- --destination_ip or-d: Enter the destination IPv4 address or subnet.
+- --destination_ip or -d: Enter the destination IPv4 address or subnet.
 - --protocol or -p: Enter the protocol (tcp, udp, icmp).
 - --destination_port or -dp: Enter the destination ports (udp, tcp).
 - --source_port or -sp: Enter the source ports (udp, tcp).
@@ -83,6 +99,8 @@ The available options:
 - --security-detail: Look up the rule behind each deny (see *The deciding rule* below). Off by default: extra calls to IP Fabric.
 - --first-path or -fp: Follow one branch at each fork (tree and table).
 - --verbose or -v: Enable verbose mode: add the raw edge dump (section `x`) and, under each hop in the tree, how it forwarded the packet (`↪ route 10.2.0.0/24 · ttl 127 · next-hop 10.1.0.93`: matched route, next hops, MPLS labels, IPsec tunnels, header patches).
+- --report-dir: Also write this flow's files (markdown report and summary, JSON) into that folder; add --png for the diagram (see *Per-flow reports*).
+- --png: With --report-dir, also save the diagram as a PNG.
 - --file or -f: JSON file containing Pathlookup output \*testing purposes only\*
 
 To run it:
@@ -510,6 +528,19 @@ works against any instance.
 
 ## Limitations / Future development
 
+- **Security detail is a heuristic.** The rule behind a deny is found by joining the event's rule
+  pointer to the policy tables; that mapping is not documented by IP Fabric. It is only shown when
+  exactly one row matches and agrees with the verdict, but it should be reviewed before it is used
+  as evidence. The ACI part (EPG names, VNI) has only been tested with synthetic data.
+- **Subnet sources.** A source such as `10.0.0.0/24` is simulated as a range: `REACHED` can mean
+  "at least one address in the range gets through", and `--auto-pivot` skips subnets.
+- **Saved verifications** (`--create-path-verifications`) do not carry the entry point found by
+  `--auto-pivot`: they are created with the automatic first hop.
+- **An event type unknown to the installed SDK** makes the whole lookup fail to parse (the SDK
+  models events as a closed union). Keep `ipfabric` at 8.0.1 or newer; the code was exercised
+  against IP Fabric 8.1 and 8.2.
+- **Routing loops.** The path walk assumes IP Fabric's edge graph has no cycles. It has not been
+  tried against a capture of a routing loop.
 - Multiple ports or IPs as part of the input may not be correctly represented. For example, if you want to see the flow opening result for destination port 80,443 the output will not differentiate which one is allowed/denied.
 - The source hop merges the egress of every start edge onto one line, so a source with
   two uplinks shows both there rather than one per branch.

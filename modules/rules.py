@@ -25,9 +25,21 @@ from threading import Lock
 # securityType in the event -> the table that holds its rules.
 _TABLES = {"acl": "acl", "zoneFw": "zone_firewall_policies"}
 _COLUMNS = [
-    "hostname", "policyName", "ruleNumber", "ruleName", "description",
-    "action", "ipProtocol", "ipSrc", "ipDst", "dstPorts",
-    "tcpDst", "udpDst", "vxlanVni", "vxlanSrcGrp", "vxlanDstGrp",  # ACI
+    "hostname",
+    "policyName",
+    "ruleNumber",
+    "ruleName",
+    "description",
+    "action",
+    "ipProtocol",
+    "ipSrc",
+    "ipDst",
+    "dstPorts",
+    "tcpDst",
+    "udpDst",
+    "vxlanVni",
+    "vxlanSrcGrp",
+    "vxlanDstGrp",  # ACI
 ]
 _SEVERITY_RED = 30
 
@@ -38,7 +50,7 @@ class Rules:
     def __init__(self, ipf_client):
         self._client = ipf_client
         self._rules = {}  # (type, host, policy, number) -> rows
-        self._epgs = {}   # pcTag -> EPG label or None
+        self._epgs = {}  # pcTag -> EPG label or None
         self._lock = Lock()
 
     def detail(self, hostname: str, sec: dict) -> str | None:
@@ -47,7 +59,9 @@ class Rules:
         denies = (sec["severity"] or 0) >= _SEVERITY_RED and not sec["ignored"]
         if not (denies and sec["rule"] and sec["type"] in _TABLES):
             return None
-        rows = self._rows(sec["type"], hostname, sec["policy"], _rule_number(sec["rule"]))
+        rows = self._rows(
+            sec["type"], hostname, sec["policy"], _rule_number(sec["rule"])
+        )
         if len(rows) != 1 or not _agrees(rows[0]["action"], sec["result"]):
             return None
         return _rule_text(rows[0], self)
@@ -83,11 +97,13 @@ class Rules:
         try:
             rows = table.all(
                 columns=_COLUMNS,
-                filters={"and": [
-                    {"hostname": ["eq", hostname]},
-                    {"policyName": ["eq", policy]},
-                    {"ruleNumber": ["eq", number]},
-                ]},
+                filters={
+                    "and": [
+                        {"hostname": ["eq", hostname]},
+                        {"policyName": ["eq", policy]},
+                        {"ruleNumber": ["eq", number]},
+                    ]
+                },
             )
         except Exception:  # detail is a nicety: a failed lookup must not fail the flow
             rows = []
@@ -132,7 +148,11 @@ def _groups(values, rules: Rules) -> str:
     names = []
     for value in values:
         text = str(value)
-        tags = text.replace("prefGrMemb:", "").split(",") if "prefGrMemb" in text else [text]
+        tags = (
+            text.replace("prefGrMemb:", "").split(",")
+            if "prefGrMemb" in text
+            else [text]
+        )
         names += [rules.epg(t.strip()) or t.strip() for t in tags if t.strip()]
     return _items(names)
 
@@ -145,8 +165,16 @@ def _rule_text(row: dict, rules: Rules) -> str:
     if not proto:
         proto = "tcp" if row.get("tcpDst") else "udp" if row.get("udpDst") else "any"
     port_text = f"/{','.join(map(str, ports))}" if ports else ""
-    src = _groups(row["vxlanSrcGrp"], rules) if row.get("vxlanSrcGrp") else _items(row.get("ipSrc"))
-    dst = _groups(row["vxlanDstGrp"], rules) if row.get("vxlanDstGrp") else _items(row.get("ipDst"))
+    src = (
+        _groups(row["vxlanSrcGrp"], rules)
+        if row.get("vxlanSrcGrp")
+        else _items(row.get("ipSrc"))
+    )
+    dst = (
+        _groups(row["vxlanDstGrp"], rules)
+        if row.get("vxlanDstGrp")
+        else _items(row.get("ipDst"))
+    )
     text = f"{row['action']} {proto}{port_text} {src} → {dst}"
     if row.get("vxlanVni"):
         text += f" vni {','.join(map(str, row['vxlanVni']))}"
