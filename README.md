@@ -366,8 +366,63 @@ Additional Information
 - The --pivot option is used to find where the source IP is connected using a pivot IP.
 - The --verbose option adds the raw edge dump (section `x`) that the tree is built from.
 
-![Example1: script output](img/result01.png)
-![Example2: script output](img/result02.png)
+Example 1: RDP blocked by a zone firewall (`--secure_path --table --security-detail`)
+
+```text
+$ python e2e_analysis.py single -s 172.20.12.60 -d 172.20.23.20 -p tcp --source_port 1024 --destination_port 3389 --secure_path --table --security-detail
+
+ 1. Event Summary
+  - Summary
+    - ZONEFW
+      - Red: 2
+    - NAT44
+      - Green: 1
+
+ 2. Path (all branches)
+#  Ingress     Device              Egress  Protocol  VRF      Security
+1  -           host: 172.20.12.60  -       n/a
+2  Et1/1       s1xsw05             Et0/1   l2
+3  Et1/3       s1xsw03             Et0/1   l2
+4  Et1/0       s1xsw01             Et0/2   l2
+5  Et7         s1xgw2              Et1     ip        default
+6  ge-0/0/3.0  d1xfw01             -       ip        master   BLOCK SITE1@CORE
+
+ 3. Security verdict
+⛔ Traffic blocked at d1xfw01 (fw) on ge-0/0/3.0
+     rule: zoneFw policy 'SITE1@CORE'  → ZONEFW_DENY
+       deny any any-ipv4 → any-ipv4 (LAST-DENY-ANY)
+     drop: Security rules: packet denied.
+```
+
+Example 2: HTTPS permitted end to end, with forks and rejoins (`--table`)
+
+```text
+$ python e2e_analysis.py single -s 172.20.12.60 -d 172.20.22.20 -p tcp --source_port 1024 --destination_port 443 --secure_path --table
+
+ 2. Path (all branches)
+#   Ingress                       Device              Egress                         Protocol  VRF      Security
+1   -                             host: 172.20.12.60  -                              n/a
+2   Et1/1                         s1xsw05             Et0/1                          l2
+3   Et1/3                         s1xsw03             Et0/1                          l2
+4   Et1/0                         s1xsw01             Et0/2                          l2
+5   Et7                           s1xgw2              Et1                            ip        default
+6   ge-0/0/3.0                    d1xfw01             ge-0/0/0.0,ge-0/0/1.0          ip        master   OK SITE1@CORE (zone CORE)
+                                  ⑂ 2 branches
+                                    branch 1/2
+7   Et0/2                           d1xr01            Et1/1                          ip
+8   GigabitEthernet2                edge1x01          GigabitEthernet4.mpls,Gigabi…  mpls      100
+...
+                                  ⑃ rejoin
+15  Et1/1                         d2xr01              Et0/3,Et1/0                    ip
+...
+                                  ⑃ rejoin
+18  1/1/1                         s2xgw1              1/1/2                          ip        default
+19  1/1/1                         s2xsw01             1/1/3                          l2
+20  -                             host: 172.20.22.20  -                              n/a
+
+ 3. Security verdict
+✓ No blocking hop — traffic is permitted end to end.
+```
 
 Feel free to explore different options and customize the analysis based on your needs.
 

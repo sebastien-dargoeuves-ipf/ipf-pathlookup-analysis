@@ -312,7 +312,7 @@ def single(
     summary_path_msg += f":[blue]{src_port}[/blue]" if src_port != 0 else ""
     summary_path_msg += f" --> [red]{dst_ip}[/red]"
     summary_path_msg += f":[blue]{dst_port}[/blue]" if dst_port != 0 else ""
-    summary_path_msg += f" | {protocol} | {secured_path_msg}"
+    summary_path_msg += f" | {protocol.value} | {secured_path_msg}"
     summary_path_msg += f" | Source VRF: {source_vrf}" if source_vrf else ""
     print(summary_path_msg)
     if verbose:
