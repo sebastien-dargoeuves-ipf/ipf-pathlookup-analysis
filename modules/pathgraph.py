@@ -21,6 +21,7 @@ from collections import defaultdict, deque
 from rich import print
 from rich.markup import escape
 
+from .rules import epg_label, rule_detail
 from .utilis import display_severity
 
 EVENT_HEADER_TYPE = ("vxlan", "capwap", "gre", "esp", "mpls", "ip", "fp")
@@ -195,7 +196,7 @@ def _protocol(header_types, switching):
     return next((h for h in EVENT_HEADER_TYPE if h in header_types), "n/a")
 
 
-def _decision_events(traces):
+def _decision_events(traces, epg=None):
     """vrfs / security-checks / drops / protocol seen in the decision traces of
     ONE specific visit, not merged across every trace IP Fabric recorded for the
     device.
@@ -209,7 +210,7 @@ def _decision_events(traces):
     Worth knowing if you are tempted to simplify this: on real captures the
     traces in a group have so far always agreed, so collapsing them would look
     harmless in practice. The synthetic test is the guard, not field data."""
-    vrfs, secs, drops, headers = [], [], [], []
+    vrfs, secs, drops, headers, forwarding = [], [], [], [], []
     switching = False
     for tr in traces:
         for chain in tr.trace:
@@ -232,16 +233,79 @@ def _decision_events(traces):
                         "result": sev.name if sev else None,
                         "severity": sev.severity if sev else None,
                         "ignored": t == "security check ignored",
+                        # The verdict came from the policy's default action, not a rule
+                        # someone wrote: "blocked by default action" in the UI.
+                        "default": bool(getattr(ev, "isDefaultRule", False)),
+                        "detail": None,  # the rule in words; see hop_details(rules=)
                     }
                     if s not in secs:
                         secs.append(s)
                 elif t == "drop packet":
                     if ev.reason not in drops:
                         drops.append(ev.reason)
+                if text := _forwarding_text(ev, epg):
+                    if text not in forwarding:
+                        forwarding.append(text)
                 header = getattr(ev, "headerType", None)
                 if header and header not in headers:
                     headers.append(header)
-    return vrfs, secs, drops, _protocol(headers, switching)
+    return vrfs, secs, drops, _protocol(headers, switching), forwarding
+
+
+# Headers worth naming when pushed; Ethernet/IP re-writes happen on every hop.
+_NOTABLE_HEADERS = {"mpls", "vxlan", "esp", "gre", "ipip", "gtp"}
+
+
+def _as_dict(value) -> dict:
+    """A dict or an SDK model as a plain dict (None -> {})."""
+    if isinstance(value, dict):
+        return value
+    return value.model_dump(exclude_none=True) if hasattr(value, "model_dump") else {}
+
+
+def _forwarding_text(ev, epg=None):
+    """How the hop forwarded the packet, as a short phrase, or None for events that
+    say nothing useful ("route detail: mode routing", an Ethernet rewrite...).
+
+    `epg` (optional) turns an ACI group tag into an EPG name.
+    Examples: 'route 10.2.0.0/24', 'next-hop 10.1.0.93', 'MPLS label 1004', 'ip ttl 120',
+    'push vxlan vni 5003 group 16386'."""
+    t = ev.type
+    if t == "table entry match":
+        f = ev.filter.model_dump(exclude_none=True) if ev.filter else {}
+        f.pop("vrf", None)  # shown in its own column
+        table = str(ev.table)
+        if table == "vRoute" and "prefix" in f:
+            return f"route {f['prefix']}/{f.get('mask', '')}".rstrip("/")
+        if table == "vArp" and "ip" in f:
+            return f"next-hop {f['ip']}"
+        if table == "vMac" and "mac" in f:
+            return f"mac {f['mac']} vlan {f.get('vlanNum', '?')} on {f.get('inIfaceName', '?')}"
+        if table == "vMplsForwarding" and "label" in f:
+            return f"MPLS label {f['label']}"
+        if table == "vIpSecTunnels" and "remoteGateway" in f:
+            return f"IPsec {f.get('localGateway', '?')} → {f['remoteGateway']}"
+        return f"{table}: " + ", ".join(f"{k}={v}" for k, v in f.items())
+    if t == "route detail":
+        value = str(getattr(ev, "value", "") or "")
+        return None if value.startswith("mode ") else value
+    if t == "patch header":
+        patch = _as_dict(getattr(ev, "patch", None))
+        return ", ".join(
+            f"{ev.headerType} {k} {','.join(map(str, v)) if isinstance(v, list) else v}"
+            for k, v in patch.items()
+        ) or None
+    if t == "insert header" and ev.headerType == "vxlan":
+        header = _as_dict(getattr(ev, "header", None))
+        text = "push vxlan" + (f" vni {header['vni']}" if header.get("vni") is not None else "")
+        group = header.get("groupPolicyId")
+        if group is not None:
+            text += f" group {(epg and epg(group)) or group}"
+        return text
+    if t == "insert header" and ev.headerType in _NOTABLE_HEADERS:
+        stack = _as_dict(getattr(ev, "header", None)).get("stack")
+        return f"push {ev.headerType}" + (f" {stack}" if stack else "")
+    return None
 
 
 def _packet_dst(values):
@@ -322,7 +386,7 @@ def _zones(zonefw_interfaces, device, ifaces):
     return ",".join(sorted(zones)) or None
 
 
-def hop_details(res, zonefw_interfaces=None):
+def hop_details(res, zonefw_interfaces=None, rules=None):
     """Per-VISIT hop details, keyed by ordered_ids()'s edge ids / SOURCE.
 
     A device visited twice (e.g. a load-balancer hairpin, see _graph()) gets
@@ -340,7 +404,11 @@ def hop_details(res, zonefw_interfaces=None):
 
     def detail(node_id, ingress, egress, traces, delivered=None, terminal=False):
         node = res.nodes[node_id]
-        vrfs, secs, drops, protocol = _decision_events(traces)
+        vrfs, secs, drops, protocol, forwarding = _decision_events(
+            traces, (lambda tag: epg_label(rules, tag)) if rules else None
+        )
+        for s in secs:
+            s["detail"] = rule_detail(rules, node.label, s)
         blocked = bool(drops) or any(
             not s["ignored"] and (s["severity"] or 0) >= SEVERITY_RED for s in secs
         )
@@ -362,6 +430,7 @@ def hop_details(res, zonefw_interfaces=None):
             "vrf": (vrfs[0] if len(vrfs) == 1 else (vrfs or None)),
             "zonefw": _zones(zonefw_interfaces, node.label, egress or []),
             "security": secs or None,
+            "forwarding": forwarding,
             "dropped": bool(drops),
             "drop_reason": drops[0] if drops else None,
             "blocked": blocked,
@@ -405,9 +474,10 @@ def hop_details(res, zonefw_interfaces=None):
     return out
 
 
-def enrich(res, zonefw_interfaces=None):
-    """Nested hop structure: hop dicts in path order, forks as nested lists."""
-    d = hop_details(res, zonefw_interfaces)
+def enrich(res, zonefw_interfaces=None, rules=None):
+    """Nested hop structure: hop dicts in path order, forks as nested lists.
+    `rules` (rules.Rules, from --security-detail) adds the deciding rule's text to each security entry."""
+    d = hop_details(res, zonefw_interfaces, rules)
 
     def render(x):
         return [render(i) for i in x] if isinstance(x, list) else d[x]
@@ -429,6 +499,47 @@ def flat_rows(structure, branch=""):
                 yield from flat_rows(br, f"{branch}↳{n}")
         else:
             yield branch, item
+
+
+def path_rows(structure, first_only=False, depth=0):
+    """Rows for the table and tree views: yields (depth, hop) for a hop, and
+    (depth, note) for a fork / branch / rejoin note (a tuple, see note_text()), so the
+    structure survives flattening.
+
+    first_only follows ONE branch at each fork: the first that reaches a destination,
+    else the first. The fork note says which one, out of how many."""
+    for position, item in enumerate(structure):
+        if not isinstance(item, list):
+            yield depth, item
+            continue
+        count = len(item)
+        if first_only:
+            chosen = next((i for i, br in enumerate(item) if destinations(br)), 0)
+            if count > 1:
+                yield depth, ("fork", count, chosen + 1)
+            yield from path_rows(item[chosen], first_only, depth)
+            continue
+        if count > 1:
+            yield depth, ("fork", count, None)
+        for number, branch in enumerate(item, 1):
+            if count > 1:
+                yield depth + 1, ("branch", number, count)
+            yield from path_rows(branch, first_only, depth + (count > 1))
+        # Only a fork that the path continues past rejoins; one at the very end just
+        # has each branch finish on its own.
+        if count > 1 and position < len(structure) - 1:
+            yield depth, ("rejoin",)
+
+
+def note_text(note):
+    """The words for a path_rows() note."""
+    kind = note[0]
+    if kind == "fork":
+        _, count, shown = note
+        return f"⑂ {count} branches" + (f", showing branch {shown}" if shown else "")
+    if kind == "branch":
+        return f"branch {note[1]}/{note[2]}"
+    return "⑃ rejoin"
 
 
 def destinations(structure):
@@ -478,6 +589,7 @@ _L2_SKIP = {
     "vrf": None,
     "zonefw": None,
     "security": None,
+    "forwarding": [],
     "dropped": False,
     "drop_reason": None,
     "blocked": False,
@@ -520,19 +632,29 @@ def _widths(structure):
     )
 
 
-def show(structure, indent=0, widths=None):
+def show(structure, first_path=False, details=False):
     """Print the enriched path as a tree: one line per hop, forks as labelled
-    parallel branches, security/drop detail indented underneath."""
-    if widths is None:
-        widths = _widths(structure)
-    wd, wt = widths
-    pad = "  " * indent
-    for hop in structure:
-        if isinstance(hop, list):
-            print(f"{pad}[dim]╠═ parallel:[/dim]")
-            for br in hop:
-                show(br, indent + 1, widths)
+    branches (├─ / └─), security/drop detail indented underneath. `first_path`
+    follows one branch per fork (see path_rows); `details` adds how each hop
+    forwarded the packet (route, next hop, labels, TTL)."""
+    wd, wt = _widths(structure)
+    # last[level]: is the branch currently open at that nesting level the final one?
+    # It decides whether the guide line continues (│) or stops (blank) beside it.
+    last = {}
+
+    def guide(levels):
+        return "".join("   " if last[level] else "│  " for level in range(1, levels + 1))
+
+    for depth, hop in path_rows(structure, first_only=first_path):
+        if isinstance(hop, tuple):
+            if hop[0] == "branch":
+                last[depth] = hop[1] == hop[2]
+                corner = "└─ " if last[depth] else "├─ "
+                print(f"[dim]{guide(depth - 1)}{corner}{note_text(hop)}[/dim]")
+            else:
+                print(f"[dim]{guide(depth)}{note_text(hop)}[/dim]")
             continue
+        pad = guide(depth)
         if hop is _L2_SKIP:
             print(f"{pad}[dim]{hop['device']}[/dim]")
             continue
@@ -543,19 +665,27 @@ def show(structure, indent=0, widths=None):
             extra += f"  vrf={vrf}"
         if hop["zonefw"]:
             extra += f"  zone={hop['zonefw']}"
-        flag = "  [red]⛔ BLOCKED[/red]" if hop["blocked"] else ""
+        flag = ""
+        if hop["blocked"]:
+            # Not terminal = the lookup ran with Security: Continue, past the deny.
+            more = "" if hop["terminal"] else " (continuing simulation...)"
+            flag = f"  [red]⛔ BLOCKED{more}[/red]"
         print(
             f"{pad}• [cyan]{hop['device']:<{wd}}[/cyan] "
             f"[dim]{hop['type']:<{wt}}[/dim] {escape(io)}[green]{escape(extra)}[/green]{flag}"
         )
+        if details and hop["forwarding"]:
+            print(f"{pad}     [dim]↪ {escape(' · '.join(hop['forwarding']))}[/dim]")
         for s in hop["security"] or []:
             icon = display_severity(s["severity"])
-            rule = f" rule={s['rule']}" if s["rule"] else ""
             ignored = " [dim](ignored)[/dim]" if s["ignored"] else ""
+            ignored += " [dim](default rule)[/dim]" if s["default"] else ""
             print(
                 f"{pad}     🔒 {icon} {escape(str(s['type']))} "
-                f"'{escape(str(s['policy']))}'{escape(rule)} → {s['result']}{ignored}"
+                f"'{escape(str(s['policy']))}' → {s['result']}{ignored}"
             )
+            if s["detail"]:
+                print(f"{pad}        [dim]{escape(s['detail'])}[/dim]")
         if hop["dropped"]:
             print(f"{pad}     [red]✗ {escape(str(hop['drop_reason']))}[/red]")
 
@@ -576,12 +706,16 @@ def hop_state(h):
     return "✓"
 
 
-def blocked_hops(res, zonefw_interfaces=None):
+def blocked_hops(res, zonefw_interfaces=None, rules=None):
     """Hops where the packet was denied or dropped, each with the deciding
     security rule(s). Returns a list of dicts:
-        {device, type, drop_reason, denies:[{type, policy, rule, result}]}"""
+        {device, type, ingress, drop_reason, denies:[{type, policy, rule, result, default, detail}]}
+
+    Each distinct block is listed once. A device reached by several branches (ECMP in
+    front of a firewall) is the same block however many legs lead to it; two different
+    ingress interfaces or rules are different blocks and stay separate."""
     out = []
-    for h in flatten(enrich(res, zonefw_interfaces)):
+    for h in flatten(enrich(res, zonefw_interfaces, rules)):
         if not h["blocked"]:
             continue
         denies = [
@@ -590,34 +724,41 @@ def blocked_hops(res, zonefw_interfaces=None):
                 "policy": s["policy"],
                 "rule": s["rule"],
                 "result": s["result"],
+                "default": s["default"],
+                "detail": s["detail"],
             }
             for s in (h["security"] or [])
             if not s["ignored"] and (s["severity"] or 0) >= SEVERITY_RED
         ]
-        out.append(
-            {
-                "device": h["device"],
-                "type": h["type"],
-                "drop_reason": h["drop_reason"],
-                "denies": denies,
-            }
-        )
+        block = {
+            "device": h["device"],
+            "type": h["type"],
+            "ingress": h["ingress"] or [],
+            "drop_reason": h["drop_reason"],
+            "denies": denies,
+        }
+        if block not in out:
+            out.append(block)
     return out
 
 
-def show_blocked(res, zonefw_interfaces=None):
+def show_blocked(res, zonefw_interfaces=None, rules=None):
     """Print where/why the packet was blocked — the firewall and the deciding
     rule. Prints an all-clear line if nothing blocks the path."""
-    blocks = blocked_hops(res, zonefw_interfaces)
+    blocks = blocked_hops(res, zonefw_interfaces, rules)
     if not blocks:
         print("[green]✓ No blocking hop — traffic is permitted end to end.[/green]")
         return
     for b in blocks:
-        print(f"[red]⛔ Traffic blocked at {b['device']} ({b['type']})[/red]")
+        on = f" on {','.join(b['ingress'])}" if b["ingress"] else ""
+        print(f"[red]⛔ Traffic blocked at {b['device']} ({b['type']}){on}[/red]")
         for s in b["denies"]:
             print(
                 f"     rule: {escape(str(s['type']))} policy "
-                f"'{escape(str(s['policy']))}'  rule={s['rule']}  → {s['result']}"
+                f"'{escape(str(s['policy']))}'  → {s['result']}"
+                f"{' (default rule)' if s['default'] else ''}"
             )
+            if s["detail"]:
+                print(f"       [dim]{escape(s['detail'])}[/dim]")
         if b["drop_reason"]:
             print(f"     drop: {escape(str(b['drop_reason']))}")

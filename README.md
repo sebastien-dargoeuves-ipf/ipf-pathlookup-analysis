@@ -5,16 +5,31 @@ whole CSV of them.
 
 ## Introduction
 
-Two commands, sharing one graph walker and one intent vocabulary:
+Three commands, sharing one graph walker and one intent vocabulary:
 
 | Command | What it does | Writes to IP Fabric? |
 | --- | --- | --- |
 | `single` | One flow, rendered as a tree (or table) with the security verdict. Optional pivot to find where the source is attached. | No |
 | `bulk` | A CSV of flows, each simulated and scored against its stated intent. | Only with `--create-path-verifications` |
+| `dataset` | Builds a `bulk` input CSV from IP Fabric's host inventory. | No |
 
 `bulk --create-path-verifications` is the **one thing in this repo that writes**:
 it saves each flow into IP Fabric's **Path Verifications** table, so the flow is
 re-evaluated on every snapshot instead of being a one-off simulation.
+
+What it gives you, beyond running a path lookup:
+
+- **A verdict per flow** (`REACHED` / `PARTIAL` / `BLOCKED` / `NO-PATH`), always from a lookup
+  that stops at the first deny, compared with the intent you state (`expected`).
+- **Every branch, readable**: a tree or table with labelled forks and rejoins, or just the first
+  path with `--first-path`.
+- **Auto-pivot** for sources with no default gateway (`--auto-pivot`).
+- **Per-flow files** (`--report-dir`): detailed and summary markdown, the raw JSON, and a PNG.
+- **Scale**: `--parallel`, `--resume`, and `dataset` to generate the flow list from the inventory.
+- **Why it was blocked** (`--security-detail`): the ACL / zone-firewall / ACI rule behind a deny.
+
+The report files, `dataset`, the parallel and resumable runs and the security detail follow the
+ideas of the **path-analyzer** (`pathtest`) tool, rebuilt on this tool's typed result model.
 
 > ⚠️ Path lookup results are a **simulation**. Treat the output as draft validation
 > evidence and have a network engineer review it before it feeds any audit or
@@ -59,6 +74,8 @@ pip install pandas          # optional: only for modules/pathdiff.py
 python e2e_analysis.py single -s 192.168.1.10 -d 8.8.8.8 -p icmp
 python e2e_analysis.py bulk --input flows.csv
 python e2e_analysis.py bulk --input flows.csv --create-path-verifications
+python e2e_analysis.py bulk --input flows.csv --report-dir out --png --parallel 4 --resume
+python e2e_analysis.py dataset --output flows.csv
 ```
 
 Running `e2e_analysis.py` with no arguments lists the commands.
@@ -68,7 +85,7 @@ Running `e2e_analysis.py` with no arguments lists the commands.
 The available options:
 
 - --source_ip or -s: Enter the source IPv4 address or subnet.
-- --destination_ip or-d: Enter the destination IPv4 address or subnet.
+- --destination_ip or -d: Enter the destination IPv4 address or subnet.
 - --protocol or -p: Enter the protocol (tcp, udp, icmp).
 - --destination_port or -dp: Enter the destination ports (udp, tcp).
 - --source_port or -sp: Enter the source ports (udp, tcp).
@@ -78,8 +95,12 @@ The available options:
 - --l2_exclusion or -l2: Remove L2 from the displayed path.
 - --pivot or -pivot: Enter the Pivot IPv4 address.
 - --auto-pivot: If the source has `DEFAULT_GW_NOT_FOUND`, reverse source and destination, find where that path leaves to the transit, and re-run from that device and interface (opt-in).
-- --table or -t: Display result in a table format (see the `Br` column below).
-- --verbose or -v: Enable verbose mode, and add the raw edge dump (section `x`).
+- --table or -t: Display result in a table format (see *The table* below).
+- --security-detail: Look up the rule behind each deny (see *The deciding rule* below). Off by default: extra calls to IP Fabric.
+- --first-path or -fp: Follow one branch at each fork (tree and table).
+- --verbose or -v: Enable verbose mode: add the raw edge dump (section `x`) and, under each hop in the tree, how it forwarded the packet (`↪ route 10.2.0.0/24 · ttl 127 · next-hop 10.1.0.93`: matched route, next hops, MPLS labels, IPsec tunnels, header patches).
+- --report-dir: Also write this flow's files (markdown report and summary, JSON) into that folder; add --png for the diagram (see *Per-flow reports*).
+- --png: With --report-dir, also save the diagram as a PNG.
 - --file or -f: JSON file containing Pathlookup output \*testing purposes only\*
 
 To run it:
@@ -93,6 +114,31 @@ python e2e_analysis.py single --source_ip 192.168.1.10 --destination_ip 10.48.11
 ```
 
 Replace the IP addresses and protocol with your desired values.
+
+### `dataset` — generate the input for `bulk`
+
+```shell
+python e2e_analysis.py dataset --output flows.csv [--protocol tcp --dst-port 443] [--vrf prod]
+```
+
+Reads the host inventory, keeps **one host per subnet** (the lowest address), then writes
+every source → destination pair between them: `n` hosts give `n × (n − 1)` flows, or half
+that with `--no-bidirectional`. Thirty subnets is already 870 flows, so check the count it
+prints before running the file with `bulk`.
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--output` / `-o` | `flows_dataset.csv` | Output CSV path |
+| `--snapshot` | _(from `.env`)_ | Snapshot ID |
+| `--protocol` / `-p` | `icmp` | Protocol for every flow |
+| `--dst-port` / `-dp` | `443` | Destination port (tcp/udp; ICMP rows carry none) |
+| `--vrf` | _(all)_ | Only hosts in this VRF; repeat the option for several |
+| `--subnet-prefix` | `24` | One host per subnet of this size; `0` keeps every host |
+| `--bidirectional/--no-bidirectional` | bidirectional | A → B and B → A, or A → B only |
+
+The file has the same header as `flows_sample.csv`, with `srcPort`, `application`,
+`security`, `comment` and `expected` left empty (the defaults apply). Edit it, for
+example fill `expected`, before the `bulk` run. Only IPv4 hosts are used.
 
 ### `bulk` — a CSV of flows
 
@@ -110,6 +156,11 @@ python e2e_analysis.py bulk --input flows.csv [--output results.csv] [--limit 10
 | `--create-path-verifications` | off | **Also create each flow in IP Fabric** |
 | `--force-create` | off | Create even if an identical verification exists |
 | `--auto-pivot` | off | On `DEFAULT_GW_NOT_FOUND`, reverse src/dst, find the source's entry point and retry. Adds an `auto_pivot` output column. Single-IP sources only; saved verifications don't carry the entry point |
+| `--report-dir` | _(none)_ | Write each flow's files into this folder (see below). Adds a `report` output column |
+| `--png` | off | With `--report-dir`: also save each flow's diagram as a PNG |
+| `--security-detail` | off | With `--report-dir`: look up the rule behind each deny (see *The deciding rule*). Extra calls to IP Fabric |
+| `--parallel` | `1` | Run this many flows at once (max 10). `--delay` is then ignored. The CSV stays in input order; console lines appear as flows finish |
+| `--resume` | off | With `--report-dir`: reuse flows finished by an earlier run instead of looking them up again |
 
 `--create-path-verifications` is additive: `bulk` still simulates every row, so one
 pass gives you the outcome **and** the saved verification. That costs 3 API calls
@@ -130,7 +181,7 @@ the **same check id** rather than adding a second copy.
 | `dstPort` | no | `443` | Integer, range, or name |
 | `protocol` | no | `tcp` | `tcp`, `udp`, or `icmp` |
 | `application` | no | _(empty)_ | NGFW app name, e.g. `ssh`, `https` |
-| `security` | no | `drop` | `drop` stops at denies; `continue` simulates past them |
+| `security` | no | `drop` | What the **report** shows: `drop` stops at the first deny, `continue` shows the path beyond it. The **status and verdict never depend on it**: they always come from a lookup that stops at the first deny, because a lookup that simulates past a deny cannot say whether the traffic works |
 | `expected` | no | _(empty)_ | The intent — see below |
 | `comment` | no | _(empty)_ | Free text, copied through |
 
@@ -140,6 +191,32 @@ Any other column is copied through unchanged. See
 Appended to the output: `status`, `verdict` (when `expected` is present),
 `blocked_at`, `rule`, `branches`, `details`. With `--create-path-verifications`,
 also `create_status`, `exists`, `check_id`, `job_id`, `expectedPassingTraffic`.
+
+#### Per-flow reports (`--report-dir`)
+
+The CSV is the overview, one line per flow. `--report-dir DIR` (also on `single`) adds the
+detail, one set of files per flow:
+
+| File | Contents |
+| --- | --- |
+| `<flow>.md` | Every branch, hop by hop: interfaces, VRF, zone, forwarding decision (route, next hop, labels, TTL), security events, blocked hops, and the intent / verdict / pivot for the flow |
+| `<flow>_summary.md` | The verdict and the first path on one line |
+| `<flow>.json` | The raw IP Fabric response (can be used as a golden fixture) |
+| `<flow>.png` | The diagram, with `--png` (one extra API call per flow) |
+
+`<flow>` is `<src>_to_<dst>_<proto>-<dstPort>`, with `/` and `,` made filename-safe, `_sp<port>`
+added for a non-default source port, and `_2`, `_3`... when two rows would get the same name.
+The `.md` is written last. A report that fails to write is noted in the `report` column and
+never stops the run. With `--auto-pivot`, the JSON and PNG are those of the pivoted lookup.
+
+`--resume` skips a flow when its `.md` and `.json` (and `.png`, if `--png`) already exist
+in the report folder **and** were made for the same parameters. The `.md` starts with a
+`<!-- flow: ... -->` line recording the source, destination, ports, protocol, security
+mode, application, snapshot ID, `--auto-pivot` and `--security-detail`; if any of them differ, the flow is
+looked up again. Resumed rows reuse the verdict saved in the `.md` (`<!-- outcome: ... -->`; the JSON is the path *shown*, which for `security: continue` is not the lookup the verdict came from), so the CSV is complete
+(verdict, intent and the `auto_pivot` column included) and the console line ends with
+`[resumed]`. `--create-path-verifications` still runs for every row; it already skips
+verifications that exist.
 
 | `status` | Meaning |
 | --- | --- |
@@ -181,7 +258,8 @@ you meant to deny is getting through.
 
 Three sections: the event summary, the path itself, and the security verdict.
 The path is printed as a tree — where the traffic forks (ECMP, redundant firewall
-legs, a load-balancer hairpin) **every** leg is shown, under a `╠═ parallel:` header:
+legs, a load-balancer hairpin) **every** leg is shown as a labelled branch, and `⑃ rejoin`
+marks where they merge again. `--first-path` (`-fp`) shows one branch per fork instead:
 
 ```text
  2. Path (all branches)
@@ -189,58 +267,92 @@ legs, a load-balancer hairpin) **every** leg is shown, under a `╠═ parallel:
 • s2xsw01            switch   [1/1/3 → 1/1/1]  l2
 • s2xgw1             l3switch [1/1/2 → 1/1/1]  ip  vrf=default
 • d2xfw01            fw       [ge-0/0/2.0 → ge-0/0/0.0,ge-0/0/1.0]  ip  vrf=master  zone=CORE
-     🔒 ✅ zoneFw 'SITE2@CORE' rule=[1, 0, 0] → ZONEFW_PERMIT (ignored)
-╠═ parallel:
-  • d2xr01             router   [Gi0/3 → Gi0/5]  ip
-  • d2xr01             router   [Gi0/4 → Gi0/5]  ip
+     🔒 ✅ zoneFw 'SITE2@CORE' → ZONEFW_PERMIT (ignored)
+⑂ 2 branches
+├─ branch 1/2
+│  • d2xr01             router   [Gi0/3 → Gi0/5]  ip
+└─ branch 2/2
+   • d2xr01             router   [Gi0/4 → Gi0/5]  ip
+⑃ rejoin
 ...
 • lb3x02             lb       [Vl1 → Vl100]  ip  vrf=0
 ...
 • d3xfw02            fw       [port3 → port2]  ip  zone=any  ⛔ BLOCKED
-     🔒 ❌ zoneFw 'main' rule=[0, 2] → ZONEFW_DENY
+     🔒 ❌ zoneFw 'main' → ZONEFW_DENY
 ...
-╠═ parallel:
-  • s4xlf03            l3switch [Et1 → Et5]  vxlan  vrf=s4tenant
-  • host: 172.16.42.60 host     [- → -]  n/a
-  • s4xlf05            l3switch [Et2 → Et5]  vxlan  vrf=s4tenant
-  • host: 172.16.42.61 host     [- → -]  n/a
+⑂ 2 branches
+├─ branch 1/2
+│  • s4xlf03            l3switch [Et1 → Et5]  vxlan  vrf=s4tenant
+│  • host: 172.16.42.60 host     [- → -]  n/a
+└─ branch 2/2
+   • s4xlf05            l3switch [Et2 → Et5]  vxlan  vrf=s4tenant
+   • host: 172.16.42.61 host     [- → -]  n/a
 
  3. Security verdict
 ⛔ Traffic blocked at d3xfw02 (fw)
-     rule: zoneFw policy 'main'  rule=[0, 2]  → ZONEFW_DENY
+     rule: zoneFw policy 'main'  → ZONEFW_DENY
 ```
 
-### The `Br` column (`--table`)
+### The deciding rule (`--security-detail`)
 
-`--table` flattens the same data into rows. Because flattening loses the tree shape,
-each row carries a `Br` marker saying which leg it is on. Read it as an address, not
-a count: **blank means trunk** (every packet passes through), and each `↳N` is a turn
-taken at successive forks, stacking left to right.
+By default only what the pathlookup JSON carries is shown: for a security event, the policy
+name (`'LAN_TO_WAN'`) and an opaque rule pointer, which is not shown. It does not say which
+rule matched or what it contains.
+With `--security-detail` (`single`, or `bulk` with `--report-dir`) the rule is looked up in
+IP Fabric's ACL / zone-firewall policy tables and printed under the deny, in the verdict
+section and in the markdown report:
 
 ```text
-d4xfw01  egress eth3,eth4          ← fork #1, on the trunk (blank Br)
-├─ ↳1  s4xlf01   egress Et2,Et3    ← took eth3; this leg forks again
-│   ├─ ↳1↳1  s4xsp01 → s4xlf03 → host .60
-│   └─ ↳1↳2  s4xsp02 → s4xlf05 → host .61
-└─ ↳2  s4xlf02   egress Et2,Et3    ← took eth4; same
-    ├─ ↳2↳1  s4xsp01 → s4xlf03 → host .60
-    └─ ↳2↳2  s4xsp02 → s4xlf05 → host .61
+⛔ Traffic blocked at vpn1xfw01 (fw) on GigabitEthernet0/1
+     rule: acl policy 'LAN_TO_WAN'  → ACL_DENY
+       deny tcp/3389 172.20.22.0 255.255.255.0 → any
 ```
 
-So `↳1↳2` = "first leg of the outer fork, then second leg of the fork inside it".
+- **Cost:** only denies are looked up, one small filtered call per *distinct* rule, and every
+  answer is remembered for the whole run (and shared by `--parallel` workers). A bulk run costs
+  as many calls as there are different blocking rules, not flows, and never downloads a table.
+- **Matching:** the rule is the table row with the same device and policy whose `ruleNumber` is
+  the third number of the event's rule list (the first when it has fewer). This is a heuristic
+  (checked on live data, not documented by IP Fabric), so a rule is shown only when exactly one
+  row matches **and** its action agrees with the verdict. Otherwise the line is simply absent.
+- **ACI:** a contract is an ordinary `acl` check on a leaf. Its rule names source and destination
+  by group tag, which is resolved to the EPG name through the APIC endpoint-groups table, and
+  adds the VNI: `deny tcp/443 web (T1) → db (T1) vni 5003`. The VXLAN header's group and VNI are
+  also shown in the forwarding detail. **This part is covered by synthetic tests only**: the lab
+  it was built on has no APIC data.
+- NAT and cloud events have no rule text (`(default rule)` is shown when the event says the
+  verdict came from the default action).
 
-- **Prefix = parent.** `↳1↳1` rows sit *underneath* the `↳1` row, not beside it.
-- **To read one end-to-end path**, take every blank row plus every row whose marker is
-  a prefix of your chosen leaf: path to `.60` via `s4xlf01` = trunk + `↳1` + `↳1↳1`.
-- **Leaf markers = distinct paths.** Four above, which is why `.60` and `.61` each
-  appear twice — both leaf switches reach both spines.
+### The table (`--table`)
 
-Legs that **rejoin** put everything past the merge point back on the trunk, so a
-shared tail is rendered once, not once per leg. The merge point is the nearest edge
-every packet must cross (the immediate post-dominator) — a common descendant is not
-enough, since a packet takes only one branch of a downstream fork.
+`--table` flattens the path into one numbered row per hop (`#`). Flattening loses the
+tree shape, so forks and merges get a note row instead of a marker column:
 
-The `Sec` column shows the deciding verdict as a coloured word — `OK`, `INFO`, `WARN`,
+```text
+6   ge-0/0/2.0  d1xfw01      ge-0/0/0.0,ge-0/0/1.0  ip  master  OK SITE1@CORE
+                ⑂ 2 branches
+                  branch 1/2
+7   Et0/2         d1xr01     Et1/1                  ip
+...
+                  branch 2/2
+12  Et0/2         d1xr02     Et1/1                  ip
+...
+                ⑃ rejoin
+15  Gi0/4       d3xr02       Gi0/2                  ip
+```
+
+- Hops inside a fork are indented under their `branch n/N` note; nested forks indent
+  further.
+- `⑃ rejoin` means the path continues past the fork, so everything below is shared.
+  A fork at the very end (e.g. several destination hosts) has no rejoin.
+- Columns that are empty for the whole path (VRF, Security) are left out.
+
+`--first-path` (`-fp`) works the same way in the tree: it follows one branch at each fork instead of all of them: the
+first branch that reaches the destination, else the first. The fork note says how many
+branches were left out (`⑂ 3 branches, showing branch 1`). The security verdict below
+the table still covers all branches, so a blocked leg is not hidden by the shorter view.
+
+The `Security` column shows the deciding verdict as a coloured word — `OK`, `INFO`, `WARN`,
 `BLOCK` — rather than the emoji used in the tree. Emoji are double-width in most
 terminals but rich measures some of them as one cell, which shifts every column border
 below them.
@@ -254,8 +366,63 @@ Additional Information
 - The --pivot option is used to find where the source IP is connected using a pivot IP.
 - The --verbose option adds the raw edge dump (section `x`) that the tree is built from.
 
-![Example1: script output](img/result01.png)
-![Example2: script output](img/result02.png)
+Example 1: RDP blocked by a zone firewall (`--secure_path --table --security-detail`)
+
+```text
+$ python e2e_analysis.py single -s 172.20.12.60 -d 172.20.23.20 -p tcp --source_port 1024 --destination_port 3389 --secure_path --table --security-detail
+
+ 1. Event Summary
+  - Summary
+    - ZONEFW
+      - Red: 2
+    - NAT44
+      - Green: 1
+
+ 2. Path (all branches)
+#  Ingress     Device              Egress  Protocol  VRF      Security
+1  -           host: 172.20.12.60  -       n/a
+2  Et1/1       s1xsw05             Et0/1   l2
+3  Et1/3       s1xsw03             Et0/1   l2
+4  Et1/0       s1xsw01             Et0/2   l2
+5  Et7         s1xgw2              Et1     ip        default
+6  ge-0/0/3.0  d1xfw01             -       ip        master   BLOCK SITE1@CORE
+
+ 3. Security verdict
+⛔ Traffic blocked at d1xfw01 (fw) on ge-0/0/3.0
+     rule: zoneFw policy 'SITE1@CORE'  → ZONEFW_DENY
+       deny any any-ipv4 → any-ipv4 (LAST-DENY-ANY)
+     drop: Security rules: packet denied.
+```
+
+Example 2: HTTPS permitted end to end, with forks and rejoins (`--table`)
+
+```text
+$ python e2e_analysis.py single -s 172.20.12.60 -d 172.20.22.20 -p tcp --source_port 1024 --destination_port 443 --secure_path --table
+
+ 2. Path (all branches)
+#   Ingress                       Device              Egress                         Protocol  VRF      Security
+1   -                             host: 172.20.12.60  -                              n/a
+2   Et1/1                         s1xsw05             Et0/1                          l2
+3   Et1/3                         s1xsw03             Et0/1                          l2
+4   Et1/0                         s1xsw01             Et0/2                          l2
+5   Et7                           s1xgw2              Et1                            ip        default
+6   ge-0/0/3.0                    d1xfw01             ge-0/0/0.0,ge-0/0/1.0          ip        master   OK SITE1@CORE (zone CORE)
+                                  ⑂ 2 branches
+                                    branch 1/2
+7   Et0/2                           d1xr01            Et1/1                          ip
+8   GigabitEthernet2                edge1x01          GigabitEthernet4.mpls,Gigabi…  mpls      100
+...
+                                  ⑃ rejoin
+15  Et1/1                         d2xr01              Et0/3,Et1/0                    ip
+...
+                                  ⑃ rejoin
+18  1/1/1                         s2xgw1              1/1/2                          ip        default
+19  1/1/1                         s2xsw01             1/1/3                          l2
+20  -                             host: 172.20.22.20  -                              n/a
+
+ 3. Security verdict
+✓ No blocking hop — traffic is permitted end to end.
+```
 
 Feel free to explore different options and customize the analysis based on your needs.
 
@@ -263,19 +430,26 @@ Feel free to explore different options and customize the analysis based on your 
 
 | File | Purpose | Needs |
 | --- | --- | --- |
+| `modules/rules.py` | `--security-detail`: the ACL / zone-firewall / ACI rule behind a deny, in words, looked up on demand and cached. Attached only when unambiguous. | — |
+| `modules/dataset.py` | Host inventory → one host per subnet → every src/dst pair, as `bulk` input rows. Pure functions. | — |
+| `modules/bulk.py` | One CSV row end to end for `bulk` (lookup or resume, verdict, create, report), plus the output columns and console lines. No printing, thread-safe. | `lookup`, `report`, `checks`, `verdict` |
+| `modules/report.py` | Writes one flow's files (JSON, PNG, markdown) into the report folder; file naming. | `markdown`, `pathgraph` |
+| `modules/markdown.py` | The detailed and summary markdown for one flow. Text only, no I/O. | `pathgraph`, `utilis` |
 | `modules/pathgraph.py` | Walks the graph and enriches each hop (ingress/egress, protocol, VRF, security verdict, ZoneFW, drop reason, delivered packet). Keyed on **edge** id, so a device traversed twice gets one entry per visit. No pandas. | `utilis` |
 | `modules/verdict.py` | One lookup → `REACHED`/`PARTIAL`/`BLOCKED`/`NO-PATH` plus details, and the intent vocabulary (`MATCH`/`MISMATCH`/`ASSESS`, and the `expectedPassingTraffic` mapping used when creating verifications). | `pathgraph` |
 | `modules/utilis.py` | Severity → icon / coloured word. | — |
 | `modules/pathdiff.py` | Compare two path lookups, locally (`diff_paths`) or via IP Fabric's server-side compare overlay (`compare_snapshots`, `overlay_diff`, `divergence_point`). Returns DataFrames; intended for Jupyter. | `pathgraph`, **pandas** |
 | `modules/pivot.py` | Entry point of the source, from a pivot lookup's `--transit` edge. | `pathgraph` |
-| `modules/pathLookup.py` | Client, lookup call (incl. pivot), event summary, table rendering. | `pathgraph`, `pivot`, `utilis` |
+| `modules/lookup.py` | Client, the one `Unicast` builder, CSV-row parsing, `run_lookup()` with manual and auto pivot. | `pivot`, `verdict` |
+| `modules/display.py` | Event summary, pivot message, raw edge dump, table rendering. | `pathgraph`, `utilis` |
+| `modules/checks.py` | Saved path verifications (the only writes to IP Fabric). | `lookup`, `verdict` |
 
 ### Using it from Jupyter
 
 Nothing in `modules/` imports typer or touches the CLI, so copy the folder as-is.
 The minimum set is **`pathgraph.py` + `utilis.py`**; add `pathdiff.py` for the diff
-side. `pivot.py` and `pathLookup.py` are optional — take them if you want
-`get_pathlookup_model()`, which wraps the lookup including the two-stage pivot.
+side. `pivot.py` and `lookup.py` are optional — take them if you want
+`run_lookup()`, which wraps the lookup including the two-stage pivot.
 
 ```python
 from modules.pathgraph import enrich, show, show_blocked, blocked_hops, flatten
@@ -294,11 +468,14 @@ reason the diff helpers live in a separate file.
 
 ## Tests
 
-Two scripts, no pytest, no server needed for either. Run both:
+Five scripts, no pytest, no server needed for any. Run them all:
 
 ```shell
 python tests/test_pathgraph.py    # is the logic correct?
 python tests/test_golden.py       # is the output still what it was?
+python tests/test_report.py       # are the report file names right?
+python tests/test_dataset.py      # is the generated flow list right?
+python tests/test_rules.py        # is the rule lookup cheap, and only named when certain?
 ```
 
 ### `test_pathgraph.py` — is the logic correct?
@@ -406,6 +583,19 @@ works against any instance.
 
 ## Limitations / Future development
 
+- **Security detail is a heuristic.** The rule behind a deny is found by joining the event's rule
+  pointer to the policy tables; that mapping is not documented by IP Fabric. It is only shown when
+  exactly one row matches and agrees with the verdict, but it should be reviewed before it is used
+  as evidence. The ACI part (EPG names, VNI) has only been tested with synthetic data.
+- **Subnet sources.** A source such as `10.0.0.0/24` is simulated as a range: `REACHED` can mean
+  "at least one address in the range gets through", and `--auto-pivot` skips subnets.
+- **Saved verifications** (`--create-path-verifications`) do not carry the entry point found by
+  `--auto-pivot`: they are created with the automatic first hop.
+- **An event type unknown to the installed SDK** makes the whole lookup fail to parse (the SDK
+  models events as a closed union). Keep `ipfabric` at 8.0.1 or newer; the code was exercised
+  against IP Fabric 8.1 and 8.2.
+- **Routing loops.** The path walk assumes IP Fabric's edge graph has no cycles. It has not been
+  tried against a capture of a routing loop.
 - Multiple ports or IPs as part of the input may not be correctly represented. For example, if you want to see the flow opening result for destination port 80,443 the output will not differentiate which one is allowed/denied.
 - The source hop merges the egress of every start edge onto one line, so a source with
   two uplinks shows both there rather than one per branch.

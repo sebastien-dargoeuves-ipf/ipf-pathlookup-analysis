@@ -12,11 +12,11 @@ SEVERITY_ICON = {0: "✅", 10: "🔵", 20: "🟠", 30: "❌"}
 # double-width in most terminals but rich measures some of them as one cell, so a
 # column holding them ends up narrower than it renders and every border below it
 # shifts. Markup tags are excluded from rich's width calculation, so these align.
+SEVERITY_WORD = {0: "OK", 10: "INFO", 20: "WARN", 30: "BLOCK"}
+_SEVERITY_COLOUR = {0: "green", 10: "blue", 20: "yellow", 30: "red"}
 SEVERITY_TEXT = {
-    0: "[green]OK[/green]",
-    10: "[blue]INFO[/blue]",
-    20: "[yellow]WARN[/yellow]",
-    30: "[red]BLOCK[/red]",
+    level: f"[{_SEVERITY_COLOUR[level]}]{word}[/{_SEVERITY_COLOUR[level]}]"
+    for level, word in SEVERITY_WORD.items()
 }
 
 

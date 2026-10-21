@@ -1,0 +1,88 @@
+# 172.16.12.60/24 → 172.16.23.20/24 (tcp/3389)
+
+![path](rdp-partial-subnet.png)
+
+## Overview
+
+| | |
+|---|---|
+| Source | 172.16.12.60/24 |
+| Destination | 172.16.23.20/24 |
+| Protocol | tcp |
+| Source port | 1024-65535 |
+| Destination port | 3389 |
+| Path shown | stops at the first deny |
+| Intent | allow |
+| Verdict | MATCH |
+
+## Result
+
+**PARTIAL** — Reached 172.16.23.21:3389; denied [zone-deny]: d1xfw01 [fw] on ge-0/0/3.0 (ports: 3389)
+
+- Branches: 9
+- Blocked at: d1xfw01 [fw]
+- Rule: zoneFw 'SITE1@CORE' → ZONEFW_DENY
+
+## Path (all branches)
+
+| # | Device | Type | Ingress | Egress | Protocol | VRF | Zone | Forwarding | Security |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | host: 172.16.12.0 .. 172.16.12.255 | cloud | - | - | n/a |  |  |  |  |
+| 2 | s1xgw2 | l3switch | Vl112 | Et1,Et5,Et6 | ip | default |  | route 172.16.23.21/32<br>ip dst 172.16.23.21<br>ip ttl 127<br>next-hop 10.255.1.18<br>next-hop 10.255.1.22<br>route 172.16.23.0/24<br>ip dst 172.16.23.0 .. 172.16.23.20,172.16.23.22 .. 172.16.23.255<br>next-hop 10.1.0.81 |  |
+| | *⑂ 3 branches* | | | | | | | | |
+| | &nbsp;&nbsp;*branch 1/3* | | | | | | | | |
+| 3 | &nbsp;&nbsp;d1xr01 | router | Et1/0 | Et1/1 | ip |  |  | route 172.16.23.0/24<br>ip ttl 126<br>next-hop 10.254.0.13 |  |
+| 4 | &nbsp;&nbsp;edge1x01 | router | GigabitEthernet2 | GigabitEthernet4.mpls,GigabitEthernet5.public-internet | mpls | 100 |  | route 172.16.23.0/24<br>ip ttl 125<br>System IP 10.194.56.134, color mpls, encapsulation ipsec<br>push mpls [1004]<br>System IP 10.194.56.134, color public-internet, encapsulation ipsec |  |
+| | &nbsp;&nbsp;*⑂ 2 branches* | | | | | | | | |
+| | &nbsp;&nbsp;&nbsp;&nbsp;*branch 1/2* | | | | | | | | |
+| 5 | &nbsp;&nbsp;&nbsp;&nbsp;edge2x01 | router | GigabitEthernet3.mpls | GigabitEthernet2 | mpls | 100 |  | MPLS label 1004<br>route 172.16.23.0/24<br>ip ttl 124<br>next-hop 10.254.0.30 |  |
+| | &nbsp;&nbsp;&nbsp;&nbsp;*branch 2/2* | | | | | | | | |
+| 6 | &nbsp;&nbsp;&nbsp;&nbsp;edge2x01 | router | GigabitEthernet4.public-internet | GigabitEthernet2 | mpls | 100 |  | MPLS label 1004<br>route 172.16.23.0/24<br>ip ttl 124<br>next-hop 10.254.0.30 |  |
+| | &nbsp;&nbsp;*⑃ rejoin* | | | | | | | | |
+| 7 | &nbsp;&nbsp;d2xr01 | router | Gi0/5 | Gi0/3,Gi0/4 | ip |  |  | route 172.16.23.0/24<br>ip ttl 123<br>next-hop 10.1.0.89<br>next-hop 10.1.0.85 |  |
+| | &nbsp;&nbsp;*⑂ 2 branches* | | | | | | | | |
+| | &nbsp;&nbsp;&nbsp;&nbsp;*branch 1/2* | | | | | | | | |
+| 8 | &nbsp;&nbsp;&nbsp;&nbsp;d2xfw01 | fw | ge-0/0/1.0 | ge-0/0/2.0 | ip | master |  | route 172.16.23.0/24<br>ip ttl 122<br>next-hop 10.1.0.94 | OK: zoneFw 'CORE@SITE2' → ZONEFW_PERMIT |
+| | &nbsp;&nbsp;&nbsp;&nbsp;*branch 2/2* | | | | | | | | |
+| 9 | &nbsp;&nbsp;&nbsp;&nbsp;d2xfw01 | fw | ge-0/0/0.0 | ge-0/0/2.0 | ip | master |  | route 172.16.23.0/24<br>ip ttl 122<br>next-hop 10.1.0.94 | OK: zoneFw 'CORE@SITE2' → ZONEFW_PERMIT |
+| | &nbsp;&nbsp;*⑃ rejoin* | | | | | | | | |
+| 10 | &nbsp;&nbsp;s2xgw1 | l3switch | 1/1/1 | Vl223 | ip | default |  | route 172.16.23.0/24<br>ip ttl 121 |  |
+| 11 | &nbsp;&nbsp;host: 172.16.23.21 | cloud | - | - | n/a |  |  |  |  |
+| | &nbsp;&nbsp;*branch 2/3* | | | | | | | | |
+| 12 | &nbsp;&nbsp;d1xr02 | router | Et1/0 | Et1/1 | ip |  |  | route 172.16.23.0/24<br>ip ttl 126<br>next-hop 10.254.0.17 |  |
+| 13 | &nbsp;&nbsp;edge1x01 | router | GigabitEthernet3 | GigabitEthernet4.mpls,GigabitEthernet5.public-internet | mpls | 100 |  | route 172.16.23.0/24<br>ip ttl 125<br>System IP 10.194.56.134, color mpls, encapsulation ipsec<br>push mpls [1004]<br>System IP 10.194.56.134, color public-internet, encapsulation ipsec |  |
+| | &nbsp;&nbsp;*⑂ 2 branches* | | | | | | | | |
+| | &nbsp;&nbsp;&nbsp;&nbsp;*branch 1/2* | | | | | | | | |
+| 14 | &nbsp;&nbsp;&nbsp;&nbsp;edge2x01 | router | GigabitEthernet3.mpls | GigabitEthernet2 | mpls | 100 |  | MPLS label 1004<br>route 172.16.23.0/24<br>ip ttl 124<br>next-hop 10.254.0.30 |  |
+| | &nbsp;&nbsp;&nbsp;&nbsp;*branch 2/2* | | | | | | | | |
+| 15 | &nbsp;&nbsp;&nbsp;&nbsp;edge2x01 | router | GigabitEthernet4.public-internet | GigabitEthernet2 | mpls | 100 |  | MPLS label 1004<br>route 172.16.23.0/24<br>ip ttl 124<br>next-hop 10.254.0.30 |  |
+| | &nbsp;&nbsp;*⑃ rejoin* | | | | | | | | |
+| 16 | &nbsp;&nbsp;d2xr01 | router | Gi0/5 | Gi0/3,Gi0/4 | ip |  |  | route 172.16.23.0/24<br>ip ttl 123<br>next-hop 10.1.0.89<br>next-hop 10.1.0.85 |  |
+| | &nbsp;&nbsp;*⑂ 2 branches* | | | | | | | | |
+| | &nbsp;&nbsp;&nbsp;&nbsp;*branch 1/2* | | | | | | | | |
+| 17 | &nbsp;&nbsp;&nbsp;&nbsp;d2xfw01 | fw | ge-0/0/1.0 | ge-0/0/2.0 | ip | master |  | route 172.16.23.0/24<br>ip ttl 122<br>next-hop 10.1.0.94 | OK: zoneFw 'CORE@SITE2' → ZONEFW_PERMIT |
+| | &nbsp;&nbsp;&nbsp;&nbsp;*branch 2/2* | | | | | | | | |
+| 18 | &nbsp;&nbsp;&nbsp;&nbsp;d2xfw01 | fw | ge-0/0/0.0 | ge-0/0/2.0 | ip | master |  | route 172.16.23.0/24<br>ip ttl 122<br>next-hop 10.1.0.94 | OK: zoneFw 'CORE@SITE2' → ZONEFW_PERMIT |
+| | &nbsp;&nbsp;*⑃ rejoin* | | | | | | | | |
+| 19 | &nbsp;&nbsp;s2xgw1 | l3switch | 1/1/1 | Vl223 | ip | default |  | route 172.16.23.0/24<br>ip ttl 121 |  |
+| 20 | &nbsp;&nbsp;host: 172.16.23.21 | cloud | - | - | n/a |  |  |  |  |
+| | &nbsp;&nbsp;*branch 3/3* | | | | | | | | |
+| 21 | &nbsp;&nbsp;d1xfw01 | fw | ge-0/0/3.0 | - | ip | master |  | route 172.16.23.0/24<br>ip ttl 126<br>next-hop 10.1.0.70<br>next-hop 10.1.0.74 | BLOCK: zoneFw 'SITE1@CORE' → ZONEFW_DENY<br>DROP: Security rules: packet denied. |
+
+## Blocked hops
+
+- **d1xfw01** (fw) on ge-0/0/3.0: Security rules: packet denied.
+  - zoneFw 'SITE1@CORE' → ZONEFW_DENY
+
+=====  summary  =====
+
+# 172.16.12.60/24 → 172.16.23.20/24 (tcp/3389)
+
+**PARTIAL** — Reached 172.16.23.21:3389; denied [zone-deny]: d1xfw01 [fw] on ge-0/0/3.0 (ports: 3389)
+
+- Intent: allow
+- Verdict: MATCH
+- Blocked at: d1xfw01 [fw]
+- Branches: 9
+
+First path: host: 172.16.12.0 .. 172.16.12.255 → s1xgw2 → d1xr01 → edge1x01 → edge2x01 → d2xr01 → d2xfw01 → s2xgw1 → host: 172.16.23.21

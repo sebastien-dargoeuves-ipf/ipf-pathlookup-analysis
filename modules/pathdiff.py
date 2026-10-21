@@ -366,7 +366,7 @@ def show_overlay(structure, indent=0, color=True):
             for s in hop["security"] or []:
                 print(
                     "  " * indent
-                    + f"     🔒 {s['type']} '{s['policy']}' rule={s['rule']} → {s['result']}"
+                    + f"     🔒 {s['type']} '{s['policy']}' → {s['result']}"
                 )
             if hop["dropped"]:
                 print("  " * indent + f"     ✗ {hop['drop_reason']}")

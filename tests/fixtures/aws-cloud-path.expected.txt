@@ -2,7 +2,7 @@
 status: PARTIAL
 details: Reached 10.2.0.222:8080; denied [acl-deny]: vpn1xfw01 [fw] on GigabitEthernet0/2 (ports: 1024 .. 8079, 8081 .. 65535)
 blocked_at: vpn1xfw01 [fw]
-rule: acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
+rule: acl 'LAN_TO_WAN' → ACL_DENY
 branches: 1
 
 == destinations ==
@@ -25,9 +25,10 @@ vpn1xfw01 [fw] drop=Security rules: packet denied.
 == tree ==
 • host: 172.16.12.0 .. 172.16.12.255 cloud     [- → -]  n/a
 • s1xgw2                             l3switch  [Vl112 → Et2]  ip  vrf=default
-• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED
-     🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
-     🔒 ✅ acl 'LAN_TO_WAN' rule=[0, 1, 5] → ACL_PERMIT
+• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (continuing 
+simulation...)
+     🔒 ❌ acl 'LAN_TO_WAN' → ACL_DENY (default rule)
+     🔒 ✅ acl 'LAN_TO_WAN' → ACL_PERMIT
      ✗ Security rules: packet denied.
 • transit                            transit   [- → -]  n/a
 • IPF-LAB                            awsTgw    [vpn-0edbe102d66f932dc/outside/3.74.102.138 → subnet-06ff93eb663576eff]  
@@ -39,9 +40,10 @@ esp  vrf=tgw-rtb-0912221debb346727
 == tree --l2 ==
 • host: 172.16.12.0 .. 172.16.12.255 cloud     [- → -]  n/a
 • s1xgw2                             l3switch  [Vl112 → Et2]  ip  vrf=default
-• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED
-     🔒 ❌ acl 'LAN_TO_WAN' rule=[0, 1, 6] → ACL_DENY
-     🔒 ✅ acl 'LAN_TO_WAN' rule=[0, 1, 5] → ACL_PERMIT
+• vpn1xfw01                          fw        [GigabitEthernet0/2 → GigabitEthernet0/0]  esp  ⛔ BLOCKED (continuing 
+simulation...)
+     🔒 ❌ acl 'LAN_TO_WAN' → ACL_DENY (default rule)
+     🔒 ✅ acl 'LAN_TO_WAN' → ACL_PERMIT
      ✗ Security rules: packet denied.
 • transit                            transit   [- → -]  n/a
 • IPF-LAB                            awsTgw    [vpn-0edbe102d66f932dc/outside/3.74.102.138 → subnet-06ff93eb663576eff]  

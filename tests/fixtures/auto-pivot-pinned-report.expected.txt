@@ -1,0 +1,45 @@
+# 172.15.0.1 → 10.64.128.5 (tcp/3389)
+
+![path](auto-pivot-pinned.png)
+
+## Overview
+
+| | |
+|---|---|
+| Source | 172.15.0.1 |
+| Destination | 10.64.128.5 |
+| Protocol | tcp |
+| Source port | 1024-65535 |
+| Destination port | 3389 |
+| Path shown | continues past denies |
+| Intent | allow |
+| Verdict | MATCH |
+
+## Result
+
+**REACHED** — Reached 10.64.128.5:3389
+
+- Branches: 1
+
+## Path (all branches)
+
+| # | Device | Type | Ingress | Egress | Protocol | VRF | Zone | Forwarding | Security |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | host: 172.15.0.1 | host | - | - | n/a |  |  |  |  |
+| 2 | HWLAB | router | e1_lab | vlan128_hw_lab_oob | ip | main |  | route 10.64.128.0/24<br>ip ttl 127<br>next-hop 10.64.128.5 |  |
+| 3 | hwl-r1-tor1 | switch | Gi1/0/1 | Gi1/0/48 | l2 |  |  | mac e007.1bab.e440 vlan 128 on Gi1/0/1 |  |
+| 4 | hwl-r2-tor1 | switch | Gi1/0/48 | Gi1/0/25 | l2 |  |  | mac e007.1bab.e440 vlan 128 on Gi1/0/48 |  |
+| 5 | hwl-r2-8-C3850-48T | l3switch | Gi1/0/2 | Gi1/0/6 | l2 |  |  | mac e007.1bab.e440 vlan 128 on ? |  |
+| 6 | HWLAB-A2530 | switch | Vl102 | - | ip |  |  |  |  |
+
+=====  summary  =====
+
+# 172.15.0.1 → 10.64.128.5 (tcp/3389)
+
+**REACHED** — Reached 10.64.128.5:3389
+
+- Intent: allow
+- Verdict: MATCH
+- Branches: 1
+
+First path: host: 172.15.0.1 → HWLAB → hwl-r1-tor1 → hwl-r2-tor1 → hwl-r2-8-C3850-48T → HWLAB-A2530

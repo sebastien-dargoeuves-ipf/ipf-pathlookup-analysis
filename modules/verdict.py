@@ -119,7 +119,7 @@ def _drop_text(drops):
 def _rule_text(block):
     """The deciding rule at a blocked hop, for the `rule` column."""
     for deny in block["denies"]:
-        return f"{deny['type']} '{deny['policy']}' rule={deny['rule']} → {deny['result']}"
+        return f"{deny['type']} '{deny['policy']}' → {deny['result']}"
     return block["drop_reason"] or ""
 
 
@@ -184,7 +184,8 @@ def classify(res, zonefw_interfaces=None):
     return {
         "status": status,
         "details": details,
-        "blocked_at": "; ".join(f"{b['device']} [{b['type']}]" for b in blocks),
-        "rule": "; ".join(filter(None, (_rule_text(b) for b in blocks))),
+        # dict.fromkeys: the same device blocked on two interfaces is one place, one line.
+        "blocked_at": "; ".join(dict.fromkeys(f"{b['device']} [{b['type']}]" for b in blocks)),
+        "rule": "; ".join(dict.fromkeys(filter(None, (_rule_text(b) for b in blocks)))),
         "branches": branch_count(structure),
     }

@@ -55,7 +55,6 @@ os.environ["COLUMNS"] = "120"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ipfabric.diagrams import Algorithm
 from ipfabric.diagrams.output_models import PathLookupResult
 from rich import get_console
 
@@ -76,6 +75,8 @@ from modules.pathgraph import (
     flat_rows,
     show,
 )
+from modules.lookup import flow_from_row
+from modules.markdown import ReportData, detailed_markdown, summary_markdown
 from modules.pivot import return_entry_point_pivot
 from modules.verdict import classify
 
@@ -124,6 +125,7 @@ SCENARIOS = [
     {
         "name": "rdp-partial-subnet",
         "why": "PARTIAL: one host of the subnet reached, the rest denied",
+        "report": True,  # also snapshot the markdown report
         "flow": {"srcIP": "172.16.12.60/24", "dstIP": "172.16.23.20/24",
                  "dstPort": "3389", "protocol": "tcp", "application": "rdp"},
     },
@@ -131,6 +133,7 @@ SCENARIOS = [
         "name": "aws-cloud-path",
         "why": "cloud node types (transit/awsTgw/awsSubnet/awsEni) — these set no "
                "interface name, which is what broke destination detection once",
+        "report": True,  # also snapshot the markdown report
         "flow": {"srcIP": "172.16.12.60/24", "dstIP": "10.2.0.222",
                  "dstPort": "1024-65535", "protocol": "tcp", "application": "https"},
     },
@@ -146,6 +149,7 @@ SCENARIOS = [
         "name": "auto-pivot-pinned",
         "why": "src has no default gateway; lookup pinned to the entry point found "
                "by the reverse path, and it REACHES the destination",
+        "report": True,  # also snapshot the markdown report
         "flow": {"srcIP": "172.15.0.1", "dstIP": "10.64.128.5",
                  "dstPort": "3389", "protocol": "tcp", "security": "continue"},
         "auto_pivot": True,
@@ -223,6 +227,23 @@ def render_pivot(res):
     return render(res) + f"\n== entry point ==\n{return_entry_point_pivot(res)}\n"
 
 
+def render_report(scenario):
+    """The detailed and summary markdown a bulk --report-dir would write for this
+    recorded flow. `extra` is fixed text so the snapshot covers the intent rows too."""
+    res = load(scenario["name"])
+    data = ReportData(
+        name=scenario["name"],
+        flow=flow_from_row(scenario["flow"]),
+        outcome=classify(res),
+        result=res,
+        structure=enrich(res),
+        zonefw_interfaces=None,
+        extra={"Intent": "allow", "Verdict": "MATCH"},
+        image=f"{scenario['name']}.png",
+    )
+    return detailed_markdown(data) + "\n=====  summary  =====\n\n" + summary_markdown(data)
+
+
 def render_overlay(res):
     """A server-side compare overlay as text.
 
@@ -266,7 +287,7 @@ def record():
     from dotenv import find_dotenv, load_dotenv
 
     from e2e_analysis import _client
-    from modules.pathLookup import unicast_from_row
+    from modules.lookup import flow_from_row, run_lookup, unicast_from_row
 
     # Load .env up front: the snapshot lookups below happen before _client() would
     # otherwise do it, and unset vars silently skip scenarios.
@@ -296,16 +317,12 @@ def record():
 
         client = _client(snapshot)
         if scenario.get("auto_pivot"):
-            # Same two steps as model_row_auto_pivot: reverse lookup -> entry point
-            # -> real lookup pinned to it. Needs the auto-pivot-reverse scenario's flow.
-            flow = scenario["flow"]
-            reverse = {**flow, "srcIP": flow["dstIP"], "dstIP": flow["srcIP"]}
-            entry = return_entry_point_pivot(
-                client.diagram.model(unicast_from_row(reverse))
+            # The real path: plain lookup, reverse lookup, lookup pinned to the entry
+            # point. We keep the Unicast that produced the final result.
+            lookup = run_lookup(
+                client.diagram, flow_from_row(scenario["flow"]), auto_pivot=True
             )
-            unicast = unicast_from_row(
-                flow, first_hop_algorithm=Algorithm(entryPoints=[entry])
-            )
+            unicast = lookup.unicast
         else:
             unicast = unicast_from_row(scenario["flow"])
         data = client.diagram.json(unicast, **kwargs)
@@ -340,6 +357,12 @@ def main():
                if not (FIXTURES / f"{s['name']}.json").exists()]
     for name in missing:
         print(f"?  {name}: no recording yet — run --record")
+
+    cases += [
+        (f"{s['name']}-report", lambda s=s: render_report(s))
+        for s in SCENARIOS
+        if s.get("report") and s["name"] not in missing
+    ]
 
     for pair in DIFFS:
         if pair["a"] in missing or pair["b"] in missing:
